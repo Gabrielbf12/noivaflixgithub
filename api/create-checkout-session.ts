@@ -1,0 +1,38 @@
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-01-27.acacia', // Use latest or pinning version
+});
+
+export default async function handler(req: any, res: any) {
+    if (req.method === 'POST') {
+        try {
+            const { priceId, userId, userEmail } = req.body;
+
+            // Create Checkout Session
+            const session = await stripe.checkout.sessions.create({
+                payment_method_types: ['card'], // Add 'pix' if enabled in Stripe Dashboard
+                line_items: [
+                    {
+                        price: priceId || 'price_H5ggYwtDq4fbrJ', // Replace with real Price ID
+                        quantity: 1,
+                    },
+                ],
+                mode: 'payment', // or 'subscription'
+                success_url: `${req.headers.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+                cancel_url: `${req.headers.origin}/assinatura`,
+                customer_email: userEmail,
+                metadata: {
+                    userId: userId,
+                },
+            });
+
+            res.status(200).json({ sessionId: session.id, url: session.url });
+        } catch (err: any) {
+            res.status(500).json({ statusCode: 500, message: err.message });
+        }
+    } else {
+        res.setHeader('Allow', 'POST');
+        res.status(405).end('Method Not Allowed');
+    }
+}

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Star, ShieldCheck, CreditCard, Lock, QrCode, Copy, Check } from 'lucide-react';
 import { User } from '../types';
+import stripePromise from '../lib/stripe';
 
 interface SubscriptionPageProps {
     user: User;
@@ -19,13 +20,46 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
         setCheckoutStep('initial');
     };
 
-    const handleConfirmPayment = () => {
+    const handleConfirmPayment = async () => {
         setIsLoading(true);
-        // Simular verificação de pagamento
-        setTimeout(() => {
+        try {
+            // Call the Vercel API (or your backend)
+            const response = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    priceId: 'price_1Q...', // REPLACE THIS with your actual Stripe Price ID
+                    userId: user.id || 'unknown_user',
+                    userEmail: user.email,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Erro ao criar sessão de pagamento.');
+            }
+
+            const { sessionId } = await response.json();
+            const stripe = await stripePromise;
+
+            if (!stripe) throw new Error('Stripe não carregou.');
+
+            const { error } = await stripe.redirectToCheckout({
+                sessionId,
+            });
+
+            if (error) {
+                console.error('Stripe Error:', error);
+                alert('Erro ao redirecionar para o pagamento: ' + error.message);
+            }
+        } catch (error: any) {
+            console.error('Payment Error:', error);
+            alert('Falha ao iniciar pagamento. Verifique se a API Key está configurada. (Erro: ' + error.message + ')');
+        } finally {
             setIsLoading(false);
-            onSubscribe();
-        }, 3000);
+        }
     };
 
     const copyPixKey = () => {
@@ -109,17 +143,10 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
 
                             <div className="space-y-4">
                                 <button
-                                    onClick={() => setCheckoutStep('card')}
+                                    onClick={handleConfirmPayment}
                                     className="w-full py-5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest shadow-xl transition-all flex justify-center items-center gap-3 border border-white/5 group"
                                 >
-                                    <CreditCard size={20} className="group-hover:text-red-500 transition-colors" /> Cartão de Crédito
-                                </button>
-
-                                <button
-                                    onClick={() => setCheckoutStep('pix')}
-                                    className="w-full py-5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest shadow-xl transition-all flex justify-center items-center gap-3 border border-white/5 group"
-                                >
-                                    <QrCode size={20} className="group-hover:text-emerald-500 transition-colors" /> Pagar via PIX
+                                    <CreditCard size={20} className="group-hover:text-red-500 transition-colors" /> Stripe Checkout (Cartão/Pix/Boleto)
                                 </button>
                             </div>
 
@@ -130,110 +157,11 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
                                 Voltar
                             </button>
                         </div>
-                    ) : checkoutStep === 'pix' ? (
-                        <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-500">
-                            <div className="text-center space-y-4">
-                                <div className="flex justify-center">
-                                    <div className="p-4 bg-white rounded-3xl shadow-2xl">
-                                        <img
-                                            src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126580014br.gov.bcb.pix0136pagamentos@noivaflix.com.br520400005303986540529.995802BR5913NOIVAFLIX%20LTDA6009SAO%20PAULO62070503***6304E2D2"
-                                            alt="QR Code Pix"
-                                            className="w-48 h-48"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="text-xl font-bold">Pague com PIX</h3>
-                                    <p className="text-zinc-500 text-sm">Escaneie o código ou copie a chave abaixo</p>
-                                </div>
-                            </div>
-
-                            <div className="bg-black/40 rounded-2xl p-4 border border-white/5 space-y-2">
-                                <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest">Chave PIX (E-mail)</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        readOnly
-                                        value="pagamentos@noivaflix.com.br"
-                                        className="flex-1 bg-transparent border-none outline-none text-sm text-zinc-300 font-mono"
-                                    />
-                                    <button
-                                        onClick={copyPixKey}
-                                        className="p-2 hover:bg-white/5 rounded-lg transition-all text-red-500"
-                                    >
-                                        {copied ? <Check size={18} /> : <Copy size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleConfirmPayment}
-                                disabled={isLoading}
-                                className="w-full py-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3"
-                            >
-                                {isLoading ? (
-                                    <>Verificando Pagamento...</>
-                                ) : (
-                                    <>Confirmar Pagamento</>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={() => setCheckoutStep('initial')}
-                                className="w-full text-zinc-500 text-xs hover:text-white transition-all uppercase font-black tracking-widest"
-                            >
-                                Alterar Método
-                            </button>
-                        </div>
                     ) : (
-                        <div className="space-y-6 animate-in slide-in-from-right-8 duration-500">
-                            <div className="space-y-2">
-                                <h3 className="text-xl font-bold flex items-center gap-3">
-                                    <CreditCard size={24} className="text-red-500" /> Cartão de Crédito
-                                </h3>
-                                <p className="text-zinc-500 text-sm">Insira os dados do seu cartao para finalizar.</p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Número do Cartão</label>
-                                    <input placeholder="0000 0000 0000 0000" className="w-full bg-zinc-950 border border-white/5 rounded-2xl p-5 text-sm outline-none focus:border-red-600 text-white" />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Nome no Cartão</label>
-                                    <input placeholder="Como está no cartão" className="w-full bg-zinc-950 border border-white/5 rounded-2xl p-5 text-sm outline-none focus:border-red-600 text-white capitalize" />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Validade</label>
-                                        <input placeholder="MM/AA" className="w-full bg-zinc-950 border border-white/5 rounded-2xl p-5 text-sm outline-none focus:border-red-600 text-white" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">CVV</label>
-                                        <input placeholder="123" className="w-full bg-zinc-950 border border-white/5 rounded-2xl p-5 text-sm outline-none focus:border-red-600 text-white" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleConfirmPayment}
-                                disabled={isLoading}
-                                className="w-full py-5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3"
-                            >
-                                {isLoading ? (
-                                    <>Processando...</>
-                                ) : (
-                                    <>Finalizar Pagamento</>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={() => setCheckoutStep('initial')}
-                                className="w-full text-zinc-500 text-xs hover:text-white transition-all uppercase font-black tracking-widest"
-                            >
-                                Escolher outro Método
-                            </button>
+                        // Existing Fallback/Legacy steps if needed, but for now redirecting directly to Stripe is cleaner.
+                        // Keeping PIX just for reference if manual pix is desired, but Stripe handles PIX too.
+                        <div className="bg-red-900/20 p-4 rounded text-center">
+                            Redirecionando para Stripe...
                         </div>
                     )}
 
