@@ -1133,7 +1133,13 @@ const App: React.FC = () => {
               <NavItem icon={<Globe size={20} />} label="Meu Site" active={currentView === AppView.SITE_BUILDER} onClick={() => setCurrentView(AppView.SITE_BUILDER)} />
             </>
           )}
-          {user?.role === 'fornecedor' && (<NavItem icon={<LayoutDashboard size={20} />} label="Meu Painel" active={currentView === AppView.SUPPLIER_DASHBOARD} onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} />)}
+          {user?.role === 'fornecedor' && (
+            <>
+              <NavItem icon={<LayoutDashboard size={20} />} label="Visão Geral" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'stats'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('stats'); }} />
+              <NavItem icon={<Users size={20} />} label="Meu Perfil" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'profile'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('profile'); }} />
+              <NavItem icon={<Camera size={20} />} label="Portfólio" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'portfolio'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('portfolio'); }} />
+            </>
+          )}
           {user?.role === 'admin' && (
             <>
               <NavItem icon={<LayoutDashboard size={20} />} label="Visão Geral" active={currentView === AppView.ADMIN_PANEL && adminTab === 'overview'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('overview'); }} />
@@ -1604,11 +1610,7 @@ const App: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div><h2 className="text-5xl font-serif">Olá, {mySupplierProfile.responsibleName}.</h2><p className="text-zinc-500 text-lg">Gerenciando <span className="text-emerald-500 font-bold">{mySupplierProfile.name}</span></p></div>
-              <div className="flex bg-zinc-950 p-2 rounded-2xl border border-white/5 gap-2 overflow-x-auto no-scrollbar">
-                <button onClick={() => setSupplierTab('stats')} className={`px-6 py-4 rounded-xl font-bold text-xs uppercase transition-all ${supplierTab === 'stats' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Stats</button>
-                <button onClick={() => setSupplierTab('profile')} className={`px-6 py-4 rounded-xl font-bold text-xs uppercase transition-all ${supplierTab === 'profile' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Perfil</button>
-                <button onClick={() => setSupplierTab('portfolio')} className={`px-6 py-4 rounded-xl font-bold text-xs uppercase transition-all ${supplierTab === 'portfolio' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Portfolio</button>
-              </div>
+
             </header>
             {supplierTab === 'stats' && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in duration-500">
