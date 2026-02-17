@@ -36,6 +36,7 @@ export interface Video {
   category: string;
   duration: string;
   thumbnail: string;
+  videoUrl: string;
   description: string;
 }
 

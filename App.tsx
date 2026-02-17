@@ -204,6 +204,8 @@ const App: React.FC = () => {
   ]);
 
   const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [mySupplierProfile, setMySupplierProfile] = useState<Vendor | null>(null);
 
   const [siteData, setSiteData] = useState<WeddingSiteData>({
@@ -214,7 +216,7 @@ const App: React.FC = () => {
   const [siteEditorTab, setSiteEditorTab] = useState<'content' | 'appearance' | 'gallery'>('content');
   const [tempCropImage, setTempCropImage] = useState<string | null>(null);
   const [supplierTab, setSupplierTab] = useState<'stats' | 'profile' | 'portfolio' | 'plan'>('stats');
-  const [adminTab, setAdminTab] = useState<'overview' | 'brides' | 'vendors' | 'finances'>('overview');
+  const [adminTab, setAdminTab] = useState<'overview' | 'brides' | 'vendors' | 'finances' | 'videos'>('overview');
   const [showCheckout, setShowCheckout] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editProfileForm, setEditProfileForm] = useState<Partial<Vendor>>({});
@@ -434,6 +436,7 @@ const App: React.FC = () => {
       } finally {
         setIsLoadingInitial(false);
         fetchVendors();
+        fetchVideos();
       }
     };
 
@@ -443,6 +446,7 @@ const App: React.FC = () => {
       if (session) {
         fetchUserProfile(session.user.id);
         fetchVendors();
+        fetchVideos();
         setIsLoggedIn(true);
       } else {
         const isRouted = await checkSiteRouting();
@@ -496,6 +500,69 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching vendors:', err);
+    }
+  };
+
+  const fetchVideos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('videos')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        setVideos(data.map(v => ({
+          id: v.id,
+          title: v.title,
+          category: v.category,
+          duration: v.duration || '',
+          thumbnail: v.thumbnail_url || '',
+          videoUrl: v.video_url,
+          description: v.description || ''
+        })));
+      }
+    } catch (err) {
+      console.error('Error fetching videos:', err);
+    }
+  };
+
+  const handleAddVideo = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+    const category = formData.get('category') as string;
+    const thumbnail = formData.get('thumbnail') as string;
+    const videoUrl = formData.get('videoUrl') as string;
+
+    if (!title || !category || !videoUrl) return;
+
+    try {
+      const { error } = await supabase.from('videos').insert({
+        title,
+        category,
+        thumbnail_url: thumbnail,
+        video_url: videoUrl
+      });
+
+      if (error) throw error;
+      alert('✅ Vídeo adicionado com sucesso!');
+      fetchVideos();
+      setActiveModal(null);
+    } catch (err: any) {
+      alert('Erro ao adicionar vídeo: ' + err.message);
+    }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este vídeo?')) return;
+    try {
+      const { error } = await supabase.from('videos').delete().eq('id', id);
+      if (error) throw error;
+      fetchVideos();
+    } catch (err: any) {
+      alert('Erro ao excluir vídeo: ' + err.message);
     }
   };
 
@@ -1203,6 +1270,7 @@ const App: React.FC = () => {
                 <button onClick={() => setAdminTab('brides')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'brides' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Noivas</button>
                 <button onClick={() => setAdminTab('vendors')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'vendors' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Fornecedores {adminStats.pendingVendors > 0 && <span className="ml-1 bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px]">{adminStats.pendingVendors}</span>}</button>
                 <button onClick={() => setAdminTab('finances')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'finances' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Financeiro</button>
+                <button onClick={() => setAdminTab('videos')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'videos' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Conteúdos</button>
               </div>
             </header>
 
@@ -1830,365 +1898,402 @@ const App: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
             <h2 className="text-5xl font-serif">Original Noivaflix</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              {MOCK_VIDEOS.map(v => (
-                <div key={v.id} className="group cursor-pointer space-y-4">
-                  <div className="relative aspect-video rounded-[32px] overflow-hidden"><img src={v.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><Play fill="white" size={32} /></div></div>
-                  <div className="px-2"><span className="text-red-500 font-black text-[10px] uppercase tracking-widest">{v.category}</span><h4 className="text-xl font-bold mt-1 text-white">{v.title}</h4></div>
-                </div>
-              ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                {videos.length === 0 ? (
+                  <div className="col-span-3 text-center py-20 bg-zinc-900/40 rounded-[40px] border border-white/5">
+                    <VideoIcon className="mx-auto text-zinc-700 mb-4" size={48} />
+                    <p className="text-zinc-500">Nenhum vídeo disponível no momento.</p>
+                  </div>
+                ) : (
+                  videos.map(v => (
+                    <div key={v.id} className="group cursor-pointer space-y-4" onClick={() => setActiveVideo(v)}>
+                      <div className="relative aspect-video rounded-[32px] overflow-hidden border border-white/5"><img src={v.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><Play fill="white" size={32} /></div></div>
+                      <div className="px-2"><span className="text-red-500 font-black text-[10px] uppercase tracking-widest">{v.category}</span><h4 className="text-xl font-bold mt-1 text-white">{v.title}</h4></div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
         )}
 
-        {currentView === AppView.VENDORS && (
-          <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
-            <header className="space-y-8">
-              <h2 className="text-5xl font-serif">Time dos Sonhos</h2>
-              <div className="bg-zinc-900/50 p-8 rounded-[40px] border border-white/5 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-                    <input
-                      value={vendorSearch.query}
-                      onChange={e => setVendorSearch({ ...vendorSearch, query: e.target.value })}
-                      placeholder="Nome do fornecedor..."
-                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                    />
+            {/* Video Player Modal */}
+            {activeVideo && (
+              <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setActiveVideo(null)}>
+                <div className="w-full max-w-5xl bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => setActiveVideo(null)} className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20"><X size={24} /></button>
+                  <div className="aspect-video w-full bg-black">
+                    {activeVideo.videoUrl.includes('youtube.com') || activeVideo.videoUrl.includes('youtu.be') ? (
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={`https://www.youtube.com/embed/${activeVideo.videoUrl.split('v=')[1]?.split('&')[0] || activeVideo.videoUrl.split('/').pop()}?autoplay=1`}
+                        title={activeVideo.title}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    ) : (
+                      <video src={activeVideo.videoUrl} controls autoPlay className="w-full h-full" />
+                    )}
                   </div>
-                  <div className="relative">
-                    <input
-                      list="vendor-categories-list"
-                      value={vendorSearch.category}
-                      onChange={e => setVendorSearch({ ...vendorSearch, category: e.target.value })}
-                      placeholder="Categoria (ex: Buffet...)"
-                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                    />
-                    <datalist id="vendor-categories-list">
-                      <option value="Espaço" />
-                      <option value="Fotografia" />
-                      <option value="Decoração" />
-                      <option value="Música" />
-                      <option value="Buffet" />
-                      <option value="Assessoria" />
-                    </datalist>
-                  </div>
-                  <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-                    <input
-                      value={vendorSearch.city}
-                      onChange={e => setVendorSearch({ ...vendorSearch, city: e.target.value })}
-                      placeholder="Cidade"
-                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                    />
-                  </div>
-                  <div className="relative">
-                    <input
-                      maxLength={2}
-                      value={vendorSearch.state}
-                      onChange={e => setVendorSearch({ ...vendorSearch, state: e.target.value.toUpperCase() })}
-                      placeholder="Estado (UF)"
-                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                    />
+                  <div className="p-8">
+                    <span className="text-red-500 font-black text-xs uppercase tracking-widest">{activeVideo.category}</span>
+                    <h3 className="text-3xl font-bold mt-2 mb-4">{activeVideo.title}</h3>
+                    <p className="text-zinc-400">{activeVideo.description || 'Sem descrição.'}</p>
                   </div>
                 </div>
-              </div>
-            </header>
-
-            {brideFilteredVendors.length === 0 ? (
-              <div className="py-20 text-center space-y-4">
-                <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto text-zinc-600">
-                  <FilterX size={32} />
-                </div>
-                <h3 className="text-2xl font-bold">Nenhum fornecedor encontrado</h3>
-                <p className="text-zinc-500">Tente ajustar seus filtros ou buscar por outros termos.</p>
-                <button
-                  onClick={() => setVendorSearch({ query: '', category: '', city: '', state: '' })}
-                  className="text-red-500 font-bold hover:underline"
-                >
-                  Limpar todos os filtros
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {brideFilteredVendors.map(vendor => (
-                  <div
-                    key={vendor.id}
-                    onClick={() => {
-                      setSelectedVendor(vendor);
-                      setActiveModal('supplier_details');
-                      handleTrackView(vendor);
-                    }}
-                    className="bg-zinc-900 rounded-[40px] overflow-hidden border border-white/5 group hover:border-red-600/40 transition-all cursor-pointer"
-                  >
-                    <div className="h-60 relative">
-                      <img src={vendor.image} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
-                      <div className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full text-xs font-bold text-amber-500 flex items-center gap-1">
-                        <Sparkles size={12} /> {vendor.rating}
-                      </div>
-                    </div>
-                    <div className="p-8 space-y-3">
-                      <h4 className="text-2xl font-bold">{vendor.name}</h4>
-                      <p className="text-zinc-500 text-sm line-clamp-2">{vendor.description}</p>
-                      <div className="flex flex-wrap items-center gap-2 text-zinc-600 text-[10px] font-black uppercase pt-4 tracking-widest">
-                        <span className="bg-zinc-800 px-3 py-1 rounded-lg text-white/80">{vendor.category}</span>
-                        <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-lg">
-                          <MapPin size={12} /> {vendor.location}, {vendor.state}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
-          </div>
-        )}
-      </main>
+
+            {currentView === AppView.VENDORS && (
+              <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
+                <header className="space-y-8">
+                  <h2 className="text-5xl font-serif">Time dos Sonhos</h2>
+                  <div className="bg-zinc-900/50 p-8 rounded-[40px] border border-white/5 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                        <input
+                          value={vendorSearch.query}
+                          onChange={e => setVendorSearch({ ...vendorSearch, query: e.target.value })}
+                          placeholder="Nome do fornecedor..."
+                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                        />
+                      </div>
+                      <div className="relative">
+                        <input
+                          list="vendor-categories-list"
+                          value={vendorSearch.category}
+                          onChange={e => setVendorSearch({ ...vendorSearch, category: e.target.value })}
+                          placeholder="Categoria (ex: Buffet...)"
+                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                        />
+                        <datalist id="vendor-categories-list">
+                          <option value="Espaço" />
+                          <option value="Fotografia" />
+                          <option value="Decoração" />
+                          <option value="Música" />
+                          <option value="Buffet" />
+                          <option value="Assessoria" />
+                        </datalist>
+                      </div>
+                      <div className="relative">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                        <input
+                          value={vendorSearch.city}
+                          onChange={e => setVendorSearch({ ...vendorSearch, city: e.target.value })}
+                          placeholder="Cidade"
+                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                        />
+                      </div>
+                      <div className="relative">
+                        <input
+                          maxLength={2}
+                          value={vendorSearch.state}
+                          onChange={e => setVendorSearch({ ...vendorSearch, state: e.target.value.toUpperCase() })}
+                          placeholder="Estado (UF)"
+                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </header>
+
+                {brideFilteredVendors.length === 0 ? (
+                  <div className="py-20 text-center space-y-4">
+                    <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto text-zinc-600">
+                      <FilterX size={32} />
+                    </div>
+                    <h3 className="text-2xl font-bold">Nenhum fornecedor encontrado</h3>
+                    <p className="text-zinc-500">Tente ajustar seus filtros ou buscar por outros termos.</p>
+                    <button
+                      onClick={() => setVendorSearch({ query: '', category: '', city: '', state: '' })}
+                      className="text-red-500 font-bold hover:underline"
+                    >
+                      Limpar todos os filtros
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {brideFilteredVendors.map(vendor => (
+                      <div
+                        key={vendor.id}
+                        onClick={() => {
+                          setSelectedVendor(vendor);
+                          setActiveModal('supplier_details');
+                          handleTrackView(vendor);
+                        }}
+                        className="bg-zinc-900 rounded-[40px] overflow-hidden border border-white/5 group hover:border-red-600/40 transition-all cursor-pointer"
+                      >
+                        <div className="h-60 relative">
+                          <img src={vendor.image} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
+                          <div className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full text-xs font-bold text-amber-500 flex items-center gap-1">
+                            <Sparkles size={12} /> {vendor.rating}
+                          </div>
+                        </div>
+                        <div className="p-8 space-y-3">
+                          <h4 className="text-2xl font-bold">{vendor.name}</h4>
+                          <p className="text-zinc-500 text-sm line-clamp-2">{vendor.description}</p>
+                          <div className="flex flex-wrap items-center gap-2 text-zinc-600 text-[10px] font-black uppercase pt-4 tracking-widest">
+                            <span className="bg-zinc-800 px-3 py-1 rounded-lg text-white/80">{vendor.category}</span>
+                            <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-lg">
+                              <MapPin size={12} /> {vendor.location}, {vendor.state}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
 
       {/* --- Modals --- */}
 
-      <Modal isOpen={activeModal === 'supplier_details' && !!selectedVendor} onClose={() => { setActiveModal(null); setSelectedVendor(null); }} title={selectedVendor?.name || 'Detalhes do Fornecedor'}>
-        {selectedVendor && (
-          <div className="space-y-10">
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-              <img src={selectedVendor.image} className="w-40 h-40 rounded-3xl object-cover border-4 border-white/5" />
-              <div className="space-y-4 flex-1">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="bg-red-600 text-white text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">{selectedVendor.plan}</span>
-                  <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest flex items-center gap-2">
-                    <Sparkles size={12} className="text-amber-500" /> {selectedVendor.rating} Avaliação
-                  </span>
-                  <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">
-                    {selectedVendor.experience_years} Anos de Exp.
-                  </span>
-                </div>
-                <h3 className="text-4xl font-serif">{selectedVendor.name}</h3>
-                <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                  <MapPin size={16} /> <span>{selectedVendor.location}, {selectedVendor.state}</span>
+        <Modal isOpen={activeModal === 'supplier_details' && !!selectedVendor} onClose={() => { setActiveModal(null); setSelectedVendor(null); }} title={selectedVendor?.name || 'Detalhes do Fornecedor'}>
+          {selectedVendor && (
+            <div className="space-y-10">
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <img src={selectedVendor.image} className="w-40 h-40 rounded-3xl object-cover border-4 border-white/5" />
+                <div className="space-y-4 flex-1">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">{selectedVendor.plan}</span>
+                    <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest flex items-center gap-2">
+                      <Sparkles size={12} className="text-amber-500" /> {selectedVendor.rating} Avaliação
+                    </span>
+                    <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">
+                      {selectedVendor.experience_years} Anos de Exp.
+                    </span>
+                  </div>
+                  <h3 className="text-4xl font-serif">{selectedVendor.name}</h3>
+                  <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                    <MapPin size={16} /> <span>{selectedVendor.location}, {selectedVendor.state}</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Sobre a Empresa</h4>
+                <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-3xl">
+                  <p className="text-zinc-400 leading-relaxed italic">"{selectedVendor.description}"</p>
+                </div>
+              </div>
+
+              {selectedVendor.portfolio && selectedVendor.portfolio.length > 0 && (
+                <div className="space-y-6">
+                  <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Portfólio em Destaque</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {selectedVendor.portfolio.map((img, idx) => (
+                      <img key={idx} src={img} className="w-full aspect-square object-cover rounded-2xl border border-white/5 hover:scale-105 transition-all cursor-zoom-in" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+                {selectedVendor.whatsapp && (
+                  <a
+                    href={`https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => handleTrackLead(selectedVendor)}
+                    className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
+                  >
+                    <MessageCircle size={20} /> Orçamento via WhatsApp
+                  </a>
+                )}
+                {selectedVendor.instagram && (
+                  <a
+                    href={`https://instagram.com/${selectedVendor.instagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-center gap-3 bg-zinc-800 hover:bg-zinc-700 text-white py-6 rounded-2xl font-black uppercase transition-all"
+                  >
+                    <Instagram size={20} /> Ver Instagram
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </Modal>
+
+
+
+
+
+        <Modal isOpen={activeModal === 'gallery_add'} onClose={() => setActiveModal(null)} title="Adicionar Foto">
+          <div className="space-y-6">
             <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Sobre a Empresa</h4>
-              <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-3xl">
-                <p className="text-zinc-400 leading-relaxed italic">"{selectedVendor.description}"</p>
-              </div>
+              <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
+              <label className="block w-full">
+                <input type="file" accept="image/*" onChange={(e) => { handleSitePhotoUpload(e, true); setActiveModal(null); }} className="hidden" />
+                <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-red-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
+                  <div className="p-4 bg-red-600/10 text-red-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
+                  <span className="text-zinc-500 font-bold">Selecionar arquivo do PC ou Celular</span>
+                </div>
+              </label>
             </div>
+            <div className="relative flex items-center py-4">
+              <div className="flex-grow border-t border-white/5"></div>
+              <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
+              <div className="flex-grow border-t border-white/5"></div>
+            </div>
+            <div className="space-y-4">
+              <input id="photo-input-noiva" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-red-600 text-white text-sm" />
+              <button onClick={() => { addPhotoToAlbum((document.getElementById('photo-input-noiva') as HTMLInputElement).value); }} className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Adicionar via URL</button>
+            </div>
+          </div>
+        </Modal>
 
-            {selectedVendor.portfolio && selectedVendor.portfolio.length > 0 && (
-              <div className="space-y-6">
-                <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Portfólio em Destaque</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {selectedVendor.portfolio.map((img, idx) => (
-                    <img key={idx} src={img} className="w-full aspect-square object-cover rounded-2xl border border-white/5 hover:scale-105 transition-all cursor-zoom-in" />
-                  ))}
+        <Modal isOpen={activeModal === 'gallery_add_supplier'} onClose={() => setActiveModal(null)} title="Foto do Portfólio">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
+              <label className="block w-full">
+                <input type="file" accept="image/*" onChange={(e) => { handleSupplierPortfolioUpload(e); setActiveModal(null); }} className="hidden" />
+                <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-emerald-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
+                  <div className="p-4 bg-emerald-600/10 text-emerald-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
+                  <span className="text-zinc-500 font-bold">Selecionar arquivo</span>
+                </div>
+              </label>
+            </div>
+            <div className="relative flex items-center py-4">
+              <div className="flex-grow border-t border-white/5"></div>
+              <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
+              <div className="flex-grow border-t border-white/5"></div>
+            </div>
+            <div className="space-y-4">
+              <input id="photo-input-supp" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white text-sm" />
+              <button onClick={() => { addPhotoToPortfolio((document.getElementById('photo-input-supp') as HTMLInputElement).value); }} className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-emerald-700 transition-all">Salvar via URL</button>
+            </div>
+          </div>
+        </Modal>
+
+        <Modal isOpen={activeModal === ('rsvp' as any)} onClose={() => setActiveModal(null)} title="Confirmar Presença">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            submitRSVP(siteData.slug, {
+              name: formData.get('name'),
+              phone: formData.get('phone'),
+              confirmed: true
+            });
+          }} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu Nome Completo</label>
+              <input name="name" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="Ex: Maria Souza" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu WhatsApp</label>
+              <input name="phone" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="(11) 99999-9999" />
+            </div>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
+              <p className="text-emerald-500 font-bold mb-1">Deseja confirmar sua presença?</p>
+              <p className="text-[10px] text-emerald-500/60 uppercase tracking-widest">Aguardamos você neste dia especial!</p>
+            </div>
+            <button type="submit" className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Confirmar Agora</button>
+          </form>
+        </Modal>
+
+        <Modal isOpen={activeModal === 'cover_crop'} onClose={() => setActiveModal(null)} title="Ajustar Foto de Capa">
+          <div className="p-2">
+            {tempCropImage && (
+              <ImageCropper
+                image={tempCropImage}
+                aspectRatio={16 / 9}
+                onCropComplete={async (croppedBlob) => {
+                  await handleSitePhotoUpload(croppedBlob, false);
+                  setActiveModal(null);
+                  setTempCropImage(null);
+                }}
+                onCancel={() => {
+                  setActiveModal(null);
+                  setTempCropImage(null);
+                }}
+              />
+            )}
+          </div>
+        </Modal>
+
+        {user?.role === 'noiva' && isAIChatOpen && (
+          <div className="fixed bottom-24 lg:bottom-40 right-6 lg:right-12 w-[calc(100vw-48px)] md:w-[450px] h-[600px] max-h-[70vh] bg-zinc-950 border border-white/10 rounded-[40px] shadow-2xl z-[200] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
+            <header className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-600/20">
+                  <Sparkles size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white">Madrinha IA</h3>
+                  <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest flex items-center gap-2">
+                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Online agora
+                  </p>
                 </div>
               </div>
-            )}
+              <button onClick={() => setIsAIChatOpen(false)} className="p-3 hover:bg-white/5 rounded-xl transition-all text-zinc-500 hover:text-white">
+                <Plus className="rotate-45" size={20} />
+              </button>
+            </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-              {selectedVendor.whatsapp && (
-                <a
-                  href={`https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => handleTrackLead(selectedVendor)}
-                  className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
-                >
-                  <MessageCircle size={20} /> Orçamento via WhatsApp
-                </a>
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar bg-gradient-to-b from-transparent to-black/20">
+              {chatMessages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                  <div className={`max-w-[85%] p-5 rounded-[24px] text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-red-600 text-white rounded-tr-none' : 'bg-zinc-900 text-zinc-300 border border-white/5 rounded-tl-none'}`}>
+                    {m.text}
+                  </div>
+                </div>
+              ))}
+              {isThinking && (
+                <div className="flex justify-start animate-pulse">
+                  <div className="bg-zinc-900 p-5 rounded-[24px] rounded-tl-none border border-white/5 flex gap-2 items-center text-zinc-500 italic text-sm">
+                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce"></span>
+                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                  </div>
+                </div>
               )}
-              {selectedVendor.instagram && (
-                <a
-                  href={`https://instagram.com/${selectedVendor.instagram.replace('@', '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-center gap-3 bg-zinc-800 hover:bg-zinc-700 text-white py-6 rounded-2xl font-black uppercase transition-all"
+              <div ref={chatEndRef} />
+            </div>
+
+            <div className="p-6 bg-zinc-900/50 border-t border-white/5">
+              <form
+                onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+                className="relative flex items-center gap-3 bg-zinc-950 border border-white/10 rounded-2xl p-2 pl-5 focus-within:border-red-600/50 transition-all"
+              >
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  placeholder="Pergunte qualquer coisa..."
+                  className="flex-1 bg-transparent border-none outline-none text-sm text-white py-3"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || isThinking}
+                  className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 disabled:grayscale shadow-lg shadow-red-600/20"
                 >
-                  <Instagram size={20} /> Ver Instagram
-                </a>
-              )}
+                  <Send size={18} />
+                </button>
+              </form>
             </div>
           </div>
         )}
-      </Modal>
 
+        {user?.role === 'noiva' && (
+          <button onClick={() => setIsAIChatOpen(!isAIChatOpen)} className={`fixed bottom-24 lg:bottom-12 right-6 lg:right-12 w-20 h-20 bg-red-600 rounded-[28px] flex items-center justify-center shadow-2xl z-[101] text-white hover:scale-110 active:scale-95 transition-all ${isAIChatOpen ? 'hidden' : 'flex'}`}><MessageSquare size={32} /></button>
+        )}
 
+        <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-black border-t border-white/5 p-4 flex justify-around items-center z-[90]">
+          <button onClick={() => setCurrentView(AppView.DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.DASHBOARD ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><LayoutDashboard /></button>
+          <button onClick={() => setCurrentView(AppView.STREAMING)} className={`p-3 transition-all ${currentView === AppView.STREAMING ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><VideoIcon /></button>
+          <button onClick={() => setCurrentView(AppView.VENDORS)} className={`p-3 transition-all ${currentView === AppView.VENDORS ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Store /></button>
+          {user?.role === 'noiva' && <button onClick={() => setCurrentView(AppView.SITE_BUILDER)} className={`p-3 transition-all ${currentView === AppView.SITE_BUILDER ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Globe /></button>}
+          {user?.role === 'fornecedor' && <button onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.SUPPLIER_DASHBOARD ? 'text-emerald-500 scale-125' : 'text-zinc-600'}`}><UserIcon /></button>}
+          {user?.role === 'admin' && <button onClick={() => setCurrentView(AppView.ADMIN_PANEL)} className={`p-3 transition-all ${currentView === AppView.ADMIN_PANEL ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Database /></button>}
+        </nav>
 
-
-
-      <Modal isOpen={activeModal === 'gallery_add'} onClose={() => setActiveModal(null)} title="Adicionar Foto">
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
-            <label className="block w-full">
-              <input type="file" accept="image/*" onChange={(e) => { handleSitePhotoUpload(e, true); setActiveModal(null); }} className="hidden" />
-              <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-red-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
-                <div className="p-4 bg-red-600/10 text-red-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
-                <span className="text-zinc-500 font-bold">Selecionar arquivo do PC ou Celular</span>
-              </div>
-            </label>
-          </div>
-          <div className="relative flex items-center py-4">
-            <div className="flex-grow border-t border-white/5"></div>
-            <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
-            <div className="flex-grow border-t border-white/5"></div>
-          </div>
-          <div className="space-y-4">
-            <input id="photo-input-noiva" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-red-600 text-white text-sm" />
-            <button onClick={() => { addPhotoToAlbum((document.getElementById('photo-input-noiva') as HTMLInputElement).value); }} className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Adicionar via URL</button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'gallery_add_supplier'} onClose={() => setActiveModal(null)} title="Foto do Portfólio">
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
-            <label className="block w-full">
-              <input type="file" accept="image/*" onChange={(e) => { handleSupplierPortfolioUpload(e); setActiveModal(null); }} className="hidden" />
-              <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-emerald-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
-                <div className="p-4 bg-emerald-600/10 text-emerald-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
-                <span className="text-zinc-500 font-bold">Selecionar arquivo</span>
-              </div>
-            </label>
-          </div>
-          <div className="relative flex items-center py-4">
-            <div className="flex-grow border-t border-white/5"></div>
-            <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
-            <div className="flex-grow border-t border-white/5"></div>
-          </div>
-          <div className="space-y-4">
-            <input id="photo-input-supp" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white text-sm" />
-            <button onClick={() => { addPhotoToPortfolio((document.getElementById('photo-input-supp') as HTMLInputElement).value); }} className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-emerald-700 transition-all">Salvar via URL</button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={activeModal === ('rsvp' as any)} onClose={() => setActiveModal(null)} title="Confirmar Presença">
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          submitRSVP(siteData.slug, {
-            name: formData.get('name'),
-            phone: formData.get('phone'),
-            confirmed: true
-          });
-        }} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu Nome Completo</label>
-            <input name="name" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="Ex: Maria Souza" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu WhatsApp</label>
-            <input name="phone" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="(11) 99999-9999" />
-          </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
-            <p className="text-emerald-500 font-bold mb-1">Deseja confirmar sua presença?</p>
-            <p className="text-[10px] text-emerald-500/60 uppercase tracking-widest">Aguardamos você neste dia especial!</p>
-          </div>
-          <button type="submit" className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Confirmar Agora</button>
-        </form>
-      </Modal>
-
-      <Modal isOpen={activeModal === 'cover_crop'} onClose={() => setActiveModal(null)} title="Ajustar Foto de Capa">
-        <div className="p-2">
-          {tempCropImage && (
-            <ImageCropper
-              image={tempCropImage}
-              aspectRatio={16 / 9}
-              onCropComplete={async (croppedBlob) => {
-                await handleSitePhotoUpload(croppedBlob, false);
-                setActiveModal(null);
-                setTempCropImage(null);
-              }}
-              onCancel={() => {
-                setActiveModal(null);
-                setTempCropImage(null);
-              }}
-            />
-          )}
-        </div>
-      </Modal>
-
-      {user?.role === 'noiva' && isAIChatOpen && (
-        <div className="fixed bottom-24 lg:bottom-40 right-6 lg:right-12 w-[calc(100vw-48px)] md:w-[450px] h-[600px] max-h-[70vh] bg-zinc-950 border border-white/10 rounded-[40px] shadow-2xl z-[200] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
-          <header className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-600/20">
-                <Sparkles size={24} />
-              </div>
-              <div>
-                <h3 className="font-bold text-white">Madrinha IA</h3>
-                <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest flex items-center gap-2">
-                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Online agora
-                </p>
-              </div>
-            </div>
-            <button onClick={() => setIsAIChatOpen(false)} className="p-3 hover:bg-white/5 rounded-xl transition-all text-zinc-500 hover:text-white">
-              <Plus className="rotate-45" size={20} />
-            </button>
-          </header>
-
-          <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar bg-gradient-to-b from-transparent to-black/20">
-            {chatMessages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                <div className={`max-w-[85%] p-5 rounded-[24px] text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-red-600 text-white rounded-tr-none' : 'bg-zinc-900 text-zinc-300 border border-white/5 rounded-tl-none'}`}>
-                  {m.text}
-                </div>
-              </div>
-            ))}
-            {isThinking && (
-              <div className="flex justify-start animate-pulse">
-                <div className="bg-zinc-900 p-5 rounded-[24px] rounded-tl-none border border-white/5 flex gap-2 items-center text-zinc-500 italic text-sm">
-                  <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce"></span>
-                  <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                  <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
-
-          <div className="p-6 bg-zinc-900/50 border-t border-white/5">
-            <form
-              onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-              className="relative flex items-center gap-3 bg-zinc-950 border border-white/10 rounded-2xl p-2 pl-5 focus-within:border-red-600/50 transition-all"
-            >
-              <input
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-                placeholder="Pergunte qualquer coisa..."
-                className="flex-1 bg-transparent border-none outline-none text-sm text-white py-3"
-              />
-              <button
-                type="submit"
-                disabled={!chatInput.trim() || isThinking}
-                className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 disabled:grayscale shadow-lg shadow-red-600/20"
-              >
-                <Send size={18} />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {user?.role === 'noiva' && (
-        <button onClick={() => setIsAIChatOpen(!isAIChatOpen)} className={`fixed bottom-24 lg:bottom-12 right-6 lg:right-12 w-20 h-20 bg-red-600 rounded-[28px] flex items-center justify-center shadow-2xl z-[101] text-white hover:scale-110 active:scale-95 transition-all ${isAIChatOpen ? 'hidden' : 'flex'}`}><MessageSquare size={32} /></button>
-      )}
-
-      <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-black border-t border-white/5 p-4 flex justify-around items-center z-[90]">
-        <button onClick={() => setCurrentView(AppView.DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.DASHBOARD ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><LayoutDashboard /></button>
-        <button onClick={() => setCurrentView(AppView.STREAMING)} className={`p-3 transition-all ${currentView === AppView.STREAMING ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><VideoIcon /></button>
-        <button onClick={() => setCurrentView(AppView.VENDORS)} className={`p-3 transition-all ${currentView === AppView.VENDORS ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Store /></button>
-        {user?.role === 'noiva' && <button onClick={() => setCurrentView(AppView.SITE_BUILDER)} className={`p-3 transition-all ${currentView === AppView.SITE_BUILDER ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Globe /></button>}
-        {user?.role === 'fornecedor' && <button onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.SUPPLIER_DASHBOARD ? 'text-emerald-500 scale-125' : 'text-zinc-600'}`}><UserIcon /></button>}
-        {user?.role === 'admin' && <button onClick={() => setCurrentView(AppView.ADMIN_PANEL)} className={`p-3 transition-all ${currentView === AppView.ADMIN_PANEL ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Database /></button>}
-      </nav>
-
-      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }.font-serif { font-family: 'Playfair Display', serif; }`}</style>
+        <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }.font-serif { font-family: 'Playfair Display', serif; }`}</style>
     </div >
   );
 };
