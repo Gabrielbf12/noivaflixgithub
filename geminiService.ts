@@ -1,5 +1,5 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -10,13 +10,24 @@ export const getAIResponse = async (userMessage: string, weddingContext: any) =>
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const ai = new GoogleGenerativeAI(API_KEY);
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash', // Using a stable model name, 'gemini-3-flash-preview' might be deprecated or wrong
-      contents: userMessage,
-      config: {
-        systemInstruction: `Você é a "Madrinha", a assistente pessoal e amiga da noiva na plataforma Noivaflix. 
+    // For @google/genai, the syntax is slightly different or we should use @google/generative-ai
+    // Note: The package.json has "@google/genai", which is the newer Google Gen AI SDK.
+    // However, the common pattern for web usually uses "@google/generative-ai".
+    // Let's try to align with the standard usage for the installed package if possible,
+    // or switch to the more common @google/generative-ai if this one is problematic.
+
+    // Assuming @google/genai is the intended one, let's correct the call.
+    // But actually, for Client-side React, @google/generative-ai is much more common.
+    // If the user installed @google/genai (Node.js/Server-side focused), it might have issues in browser or different API.
+
+    // Let's try to use the GenerativeModel approach which is standard for Gemini.
+    // Use the getGenerativeModel method.
+
+    const model = ai.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: `Você é a "Madrinha", a assistente pessoal e amiga da noiva na plataforma Noivaflix. 
         Seu lema é "RESPIRA". Seu objetivo é acalmar e ajudar, mas SEMPRE sendo **DIRETA e CONCISA**.
 
         **REGRAS DE OURO (Siga Estritamente):**
@@ -34,13 +45,14 @@ export const getAIResponse = async (userMessage: string, weddingContext: any) =>
         - Use "Respira." se ela estiver ansiosa.
         - Emojis: Use poucos (1 ou 2 por mensagem).
 
-        Contexto: Noiva: ${weddingContext.name}, Data: ${weddingContext.date}.`,
-        temperature: 0.7,
-      },
+        Contexto: Noiva: ${weddingContext.name}, Data: ${weddingContext.date}.`
     });
 
-    // Accessing .text property directly as it is a getter, not a method
-    return response.text;
+    const result = await model.generateContent(userMessage);
+    const response = await result.response;
+    const text = response.text();
+
+    return text;
   } catch (error) {
     console.error("Erro na IA:", error);
     return "Desculpe, tive um pequeno problema técnico. Mas respira, estou aqui com você! O que mais te preocupa hoje?";
