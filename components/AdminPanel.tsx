@@ -19,7 +19,6 @@ interface AdminPanelProps {
     videos: Video[];
     onApproveVendor: (id: string) => void;
     onRejectVendor: (id: string) => void;
-    onRejectVendor: (id: string) => void;
     onAddVideo: (data: { title: string; category: string; videoUrl: string; thumbnail: string }) => void;
     onDeleteVideo: (id: string) => void;
     activeTab: 'overview' | 'brides' | 'vendors' | 'finances' | 'videos';
