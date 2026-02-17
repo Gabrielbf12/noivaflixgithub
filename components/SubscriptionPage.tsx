@@ -142,9 +142,14 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
                             <div className="space-y-4">
                                 <button
                                     onClick={handleConfirmPayment}
-                                    className="w-full py-5 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest shadow-xl transition-all flex justify-center items-center gap-3 border border-white/5 group"
+                                    className="w-full py-6 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black uppercase tracking-widest shadow-2xl shadow-emerald-500/20 transition-all flex flex-col justify-center items-center gap-1 border border-emerald-400/20 group relative overflow-hidden"
                                 >
-                                    <CreditCard size={20} className="group-hover:text-red-500 transition-colors" /> Stripe Checkout (Cartão/Pix/Boleto)
+                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="flex items-center gap-3 relative z-10">
+                                        <ShieldCheck size={24} className="text-white" />
+                                        <span className="text-lg">PAGAR COM SEGURANÇA</span>
+                                    </div>
+                                    <span className="text-[10px] opacity-80 font-normal relative z-10">Pix, Cartão de Crédito ou Boleto</span>
                                 </button>
                             </div>
 
