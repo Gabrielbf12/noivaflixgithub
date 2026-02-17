@@ -595,8 +595,10 @@ const App: React.FC = () => {
         phone: data.phone
       });
       setIsLoggedIn(true);
-      if (data.role === 'noiva') fetchWeddingSite(userId);
-      if (data.role === 'fornecedor') {
+      if (data.role === 'admin') {
+        setCurrentView(AppView.ADMIN_PANEL);
+      } else if (data.role === 'fornecedor') {
+        setCurrentView(AppView.SUPPLIER_DASHBOARD);
         setMySupplierProfile({
           id: data.id,
           userId: data.id,
