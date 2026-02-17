@@ -140,7 +140,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             <div className="hidden lg:flex flex-1 relative items-center justify-center p-20 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-transparent to-black z-10"></div>
                 <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200" className="absolute inset-0 w-full h-full object-cover opacity-30" alt="Wedding" />
-                <div className="relative z-20 space-y-8"><Logo className="w-96" /><h1 className="text-7xl font-serif">Respira.<br /><span className="text-zinc-500 text-5xl">O seu dia está chegando.</span></h1></div>
+                <div className="relative z-20 space-y-8"><Logo className="w-96" /><h1 className="text-7xl font-serif">Respira.<br /><span className="text-zinc-500 text-5xl">A melhor temporada da sua vida vai começar.</span></h1></div>
             </div>
             <div className="w-full lg:w-[500px] bg-zinc-950 flex flex-col justify-center p-8 md:p-16 border-l border-white/5">
                 <div className="max-w-md mx-auto w-full space-y-10">
