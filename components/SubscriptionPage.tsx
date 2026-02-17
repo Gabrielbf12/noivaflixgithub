@@ -110,12 +110,12 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
                     {checkoutStep === 'pricing' ? (
                         <div className="space-y-8 animate-in fade-in zoom-in duration-300">
                             <div className="text-center space-y-2 mt-4">
-                                <p className="text-zinc-400 uppercase tracking-widest text-xs font-bold">Acesso Vitalício</p>
+                                <p className="text-zinc-400 uppercase tracking-widest text-xs font-bold">Assinatura Mensal</p>
                                 <div className="flex items-end justify-center gap-1">
-                                    <span className="text-5xl font-black text-white">R$ 29,99</span>
-                                    <span className="text-zinc-500 mb-2">/único</span>
+                                    <span className="text-5xl font-black text-white">R$ 29,90</span>
+                                    <span className="text-zinc-500 mb-2">/mês</span>
                                 </div>
-                                <p className="text-emerald-500 text-sm font-bold italic">Sem mensalidades, pague uma vez.</p>
+                                <p className="text-emerald-500 text-sm font-bold italic">Cancele quando quiser.</p>
                             </div>
 
                             <button
