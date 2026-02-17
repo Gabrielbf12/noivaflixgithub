@@ -41,18 +41,16 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
                 throw new Error(errorData.message || 'Erro ao criar sessão de pagamento.');
             }
 
-            const { sessionId } = await response.json();
-            const stripe = await stripePromise;
+            const { sessionId, url } = await response.json();
 
-            if (!stripe) throw new Error('Stripe não carregou.');
-
-            const { error } = await stripe.redirectToCheckout({
-                sessionId,
-            });
-
-            if (error) {
-                console.error('Stripe Error:', error);
-                alert('Erro ao redirecionar para o pagamento: ' + error.message);
+            if (url) {
+                window.location.href = url;
+            } else {
+                // Fallback to client-side redirect if URL is missing (though it shouldn't be)
+                const stripe = await stripePromise;
+                if (!stripe) throw new Error('Stripe não carregou.');
+                const { error } = await stripe.redirectToCheckout({ sessionId });
+                if (error) throw error;
             }
         } catch (error: any) {
             console.error('Payment Error:', error);
