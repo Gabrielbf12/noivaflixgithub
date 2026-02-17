@@ -1,0 +1,9 @@
+
+{
+  "name": "Noivaflix",
+  "description": "A central completa de organização do casamento com streaming educacional, ferramentas de gestão, criador de sites e assistente de IA.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
