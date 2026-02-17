@@ -1156,7 +1156,9 @@ const App: React.FC = () => {
           <img src={user?.avatar} className="w-10 h-10 rounded-xl" />
           <div className="flex-1 overflow-hidden">
             <p className="text-xs font-bold truncate">{user?.name}</p>
-            <p className="text-[10px] text-zinc-500 truncate uppercase font-black tracking-widest">{user?.plan}</p>
+            <p className="text-[10px] text-zinc-500 truncate uppercase font-black tracking-widest">
+              {user?.role === 'admin' ? 'Administrador' : user?.plan}
+            </p>
           </div>
           {user?.subscriptionStatus === 'active' && (
             <button
@@ -1176,7 +1178,11 @@ const App: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
             <header className="space-y-4">
               <h1 className="text-6xl font-serif text-white">Olá, {(user?.name?.trim() ? user.name.split(' ')[0] : 'Noiva')}.</h1>
-              <p className="text-zinc-500 text-xl italic max-w-2xl">"O planejamento de um casamento é uma maratona. Respira."</p>
+              <p className="text-zinc-500 text-xl italic max-w-2xl">
+                {user?.role === 'admin'
+                  ? "Bem-vindo ao painel de controle do Noivaflix."
+                  : "\"O planejamento de um casamento é uma maratona. Respira.\""}
+              </p>
             </header>
 
             {user?.role === 'noiva' && user?.subscriptionStatus !== 'active' && (
