@@ -1095,7 +1095,7 @@ const App: React.FC = () => {
   // Show onboarding if user hasn't completed it
   if (user && user.onboardingCompleted === false) {
     if (user.role === 'noiva') {
-      return <BrideOnboarding userId={user.id} onComplete={() => {
+      return <BrideOnboarding userId={user.id} onLogout={handleLogout} onComplete={() => {
         fetchUserProfile(user.id);
       }} />;
     } else if (user.role === 'fornecedor') {

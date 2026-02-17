@@ -6,9 +6,10 @@ import { PlanningPhase } from '../types';
 interface BrideOnboardingProps {
     userId: string;
     onComplete: () => void;
+    onLogout?: () => void;
 }
 
-export const BrideOnboarding: React.FC<BrideOnboardingProps> = ({ userId, onComplete }) => {
+export const BrideOnboarding: React.FC<BrideOnboardingProps> = ({ userId, onComplete, onLogout }) => {
     const [step, setStep] = useState(1);
     const [weddingDate, setWeddingDate] = useState('');
     const [phase, setPhase] = useState<PlanningPhase>('estou_perdida');
@@ -162,6 +163,14 @@ export const BrideOnboarding: React.FC<BrideOnboardingProps> = ({ userId, onComp
                             <button onClick={() => setStep(2)} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-widest text-sm shadow-2xl shadow-red-600/20">
                                 Continuar <ArrowRight className="w-5 h-5" />
                             </button>
+                            {onLogout && (
+                                <button
+                                    onClick={onLogout}
+                                    className="w-full py-5 bg-zinc-900 border border-white/5 hover:bg-zinc-800 rounded-2xl font-bold uppercase text-xs tracking-widest text-zinc-500 hover:text-white transition-colors"
+                                >
+                                    Sair / Cancelar
+                                </button>
+                            )}
                         </div>
                     )}
 
