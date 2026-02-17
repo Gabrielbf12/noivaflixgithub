@@ -30,7 +30,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    priceId: 'price_1Q...', // REPLACE THIS with your actual Stripe Price ID
+                    priceId: 'price_1T1txHF3n3UYo8Qwb5ORQhxU', // Correct Price ID fetched from Stripe
                     userId: user.id || 'unknown_user',
                     userEmail: user.email,
                 }),
