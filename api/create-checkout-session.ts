@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-01-27.acacia', // Use latest or pinning version
+    apiVersion: '2025-02-24.acacia', // Update to match installed library or remove to use default
 });
 
 export default async function handler(req: any, res: any) {
