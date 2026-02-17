@@ -187,6 +187,7 @@ import { GuestsScreen } from './components/GuestsScreen';
 import { ExpensesScreen } from './components/ExpensesScreen';
 import { BrideOnboarding } from './components/BrideOnboarding';
 import { VendorOnboarding } from './components/VendorOnboarding';
+import { AdminPanel } from './components/AdminPanel';
 
 // Sub-componentes auxiliares para icones não definidos
 const ArrowUpRight = ({ size }: { size: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10" /><path d="M7 17 17 7" /></svg>;
@@ -631,6 +632,7 @@ const App: React.FC = () => {
         });
         if (!!data.onboarding_completed) setCurrentView(AppView.SUPPLIER_DASHBOARD);
       }
+      if (data.role === 'admin') setCurrentView(AppView.ADMIN_PANEL);
       fetchChatMessages(userId);
     }
   };
@@ -1259,221 +1261,112 @@ const App: React.FC = () => {
         )}
 
         {currentView === AppView.ADMIN_PANEL && (
+          <AdminPanel
+            user={user}
+            adminStats={adminStats}
+            allUsers={allUsers}
+            vendors={vendors}
+            videos={videos}
+            onApproveVendor={approveVendor}
+            onRejectVendor={rejectVendor}
+            onAddVideo={handleAddVideo}
+            onDeleteVideo={handleDeleteVideo}
+          />
+        )}
+
+        <Modal isOpen={activeModal === ('add_video' as any)} onClose={() => setActiveModal(null)} title="Adicionar Novo Vídeo">
+          <form onSubmit={handleAddVideo} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Título do Vídeo</label>
+              <input name="title" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-sm outline-none focus:border-red-600 text-white" placeholder="Ex: Dicas para o Grande Dia" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Categoria</label>
+              <select name="category" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-sm outline-none focus:border-red-600 text-white">
+                <option>Planejamento</option>
+                <option>Inspiração</option>
+                <option>Dicas Práticas</option>
+                <option>Moda & Beleza</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Link do Vídeo (YouTube/MP4)</label>
+              <input name="videoUrl" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-sm outline-none focus:border-red-600 text-white" placeholder="https://youtube.com/watch?v=..." />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Link da Thumbnail (Capa)</label>
+              <input name="thumbnail" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-sm outline-none focus:border-red-600 text-white" placeholder="https://..." />
+            </div>
+            <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-black uppercase transition-all shadow-xl">Salvar Vídeo</button>
+          </form>
+        </Modal>
+
+        {currentView === AppView.STREAMING && (
           <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500">
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-              <div className="space-y-2">
-                <h2 className="text-5xl font-serif">Central Admin</h2>
-                <p className="text-zinc-500">Gestão global do ecossistema Noivaflix.</p>
-              </div>
-              <div className="flex bg-zinc-950 p-2 rounded-2xl border border-white/5 gap-2 overflow-x-auto no-scrollbar">
-                <button onClick={() => setAdminTab('overview')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'overview' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Visão Geral</button>
-                <button onClick={() => setAdminTab('brides')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'brides' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Noivas</button>
-                <button onClick={() => setAdminTab('vendors')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'vendors' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Fornecedores {adminStats.pendingVendors > 0 && <span className="ml-1 bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px]">{adminStats.pendingVendors}</span>}</button>
-                <button onClick={() => setAdminTab('finances')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'finances' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Financeiro</button>
-                <button onClick={() => setAdminTab('videos')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all ${adminTab === 'videos' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500'}`}>Conteúdos</button>
-              </div>
+            <header className="space-y-4">
+              <h2 className="text-5xl font-serif text-white">NOIVAFLIX TV (ATUALIZADO)</h2>
+              <p className="text-zinc-500 text-lg">Conteúdos exclusivos para te guiar nessa jornada.</p>
             </header>
 
-            {adminTab === 'overview' && (
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <div className="bg-zinc-900/50 p-8 rounded-[32px] border border-white/5 space-y-4">
-                    <div className="p-3 bg-red-600/10 text-red-500 w-fit rounded-xl"><Users size={20} /></div>
-                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Total Noivas</p>
-                    <h3 className="text-3xl font-black">{adminStats.totalBrides}</h3>
-                  </div>
-                  <div className="bg-zinc-900/50 p-8 rounded-[32px] border border-white/5 space-y-4">
-                    <div className="p-3 bg-emerald-600/10 text-emerald-500 w-fit rounded-xl"><Building2 size={20} /></div>
-                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Total Fornecedores</p>
-                    <h3 className="text-3xl font-black">{adminStats.totalVendors}</h3>
-                  </div>
-                  <div className="bg-zinc-900/50 p-8 rounded-[32px] border border-white/5 space-y-4">
-                    <div className="p-3 bg-amber-600/10 text-amber-500 w-fit rounded-xl"><Clock size={20} /></div>
-                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Pendentes Aprovação</p>
-                    <h3 className="text-3xl font-black">{adminStats.pendingVendors}</h3>
-                  </div>
-                  <div className="bg-zinc-900/50 p-8 rounded-[32px] border border-white/5 space-y-4">
-                    <div className="p-3 bg-blue-600/10 text-blue-500 w-fit rounded-xl"><TrendingUp size={20} /></div>
-                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">Receita Mensal (Estimada)</p>
-                    <h3 className="text-3xl font-black">R$ {adminStats.monthlyRevenue.toLocaleString()}</h3>
-                  </div>
-                </div>
-
-                <div className="bg-zinc-950 p-10 rounded-[40px] border border-white/5">
-                  <h3 className="text-xl font-bold mb-8">Atividades Recentes</h3>
-                  <div className="space-y-6">
-                    {vendors.filter(v => v.status === 'pending').map(v => (
-                      <div key={v.id} className="flex justify-between items-center p-6 bg-zinc-900/40 rounded-3xl border border-white/5">
-                        <div className="flex items-center gap-6">
-                          <img src={v.image} className="w-12 h-12 rounded-xl object-cover" />
-                          <div>
-                            <h4 className="font-bold">{v.name}</h4>
-                            <p className="text-zinc-500 text-xs uppercase tracking-widest">Solicitação de cadastro • {v.category}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-3">
-                          <button onClick={() => rejectVendor(v.id)} className="p-3 bg-red-600/10 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><X size={18} /></button>
-                          <button onClick={() => approveVendor(v.id)} className="p-3 bg-emerald-600/10 text-emerald-500 rounded-xl hover:bg-emerald-600 hover:text-white transition-all"><Check size={18} /></button>
+            {videos.length === 0 ? (
+              <div className="text-center py-20 bg-zinc-900/40 rounded-[40px] border border-white/5">
+                <VideoIcon size={48} className="mx-auto text-zinc-600 mb-4" />
+                <h3 className="text-xl font-bold text-white">Em breve</h3>
+                <p className="text-zinc-500">Nossos especialistas estão preparando conteúdos incríveis.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {videos.map(video => (
+                  <div
+                    key={video.id}
+                    onClick={() => setActiveVideo(video)}
+                    className="group cursor-pointer space-y-4"
+                  >
+                    <div className="relative aspect-video bg-zinc-900 rounded-3xl overflow-hidden border border-white/5 shadow-2xl">
+                      <img src={video.thumbnail} className="w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center shadow-2xl shadow-red-600/40 group-hover:scale-110 transition-transform duration-300">
+                          <Play size={24} fill="currentColor" className="ml-1 text-white" />
                         </div>
                       </div>
-                    ))}
-                    {adminStats.pendingVendors === 0 && <p className="text-center py-10 text-zinc-600 italic">Nenhuma atividade pendente no momento.</p>}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {adminTab === 'brides' && (
-              <div className="bg-zinc-950 p-10 rounded-[40px] border border-white/5 overflow-hidden">
-                <div className="overflow-x-auto no-scrollbar">
-                  <table className="w-full text-left">
-                    <thead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                      <tr>
-                        <th className="pb-6 pl-4">Noiva</th>
-                        <th className="pb-6">E-mail</th>
-                        <th className="pb-6">Data Casamento</th>
-                        <th className="pb-6">Plano</th>
-                        <th className="pb-6">Status</th>
-                        <th className="pb-6 text-right pr-4">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {allUsers.filter(u => u.role === 'noiva').map(bride => (
-                        <tr key={bride.id} className="group hover:bg-white/[0.02] transition-all">
-                          <td className="py-6 pl-4">
-                            <div className="flex items-center gap-4">
-                              <img src={bride.avatar} className="w-10 h-10 rounded-full" />
-                              <span className="font-bold">{bride.name}</span>
-                            </div>
-                          </td>
-                          <td className="py-6 text-sm text-zinc-400">{bride.email}</td>
-                          <td className="py-6 text-sm text-zinc-400">{bride.weddingDate || 'Não informada'}</td>
-                          <td className="py-6">
-                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${bride.plan === 'Premium' ? 'bg-red-600/20 text-red-500' : 'bg-zinc-800 text-zinc-400'}`}>
-                              {bride.plan}
-                            </span>
-                          </td>
-                          <td className="py-6">
-                            <span className="flex items-center gap-2 text-xs text-emerald-500 font-bold"><CheckCircle size={14} /> Ativo</span>
-                          </td>
-                          <td className="py-6 text-right pr-4">
-                            <button className="p-2 text-zinc-600 hover:text-white transition-colors"><Search size={16} /></button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {adminTab === 'vendors' && (
-              <div className="bg-zinc-950 p-10 rounded-[40px] border border-white/5 overflow-hidden">
-                <div className="overflow-x-auto no-scrollbar">
-                  <table className="w-full text-left">
-                    <thead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                      <tr>
-                        <th className="pb-6 pl-4">Fornecedor</th>
-                        <th className="pb-6">Categoria</th>
-                        <th className="pb-6">Cidade</th>
-                        <th className="pb-6">Plano</th>
-                        <th className="pb-6">Status</th>
-                        <th className="pb-6 text-right pr-4">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {vendors.map(v => (
-                        <tr key={v.id} className="group hover:bg-white/[0.02] transition-all">
-                          <td className="py-6 pl-4">
-                            <div className="flex items-center gap-4">
-                              <img src={v.image} className="w-10 h-10 rounded-xl object-cover" />
-                              <div className="flex flex-col">
-                                <span className="font-bold">{v.name}</span>
-                                <span className="text-[10px] text-zinc-500 truncate max-w-[150px]">{v.email}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-6 text-sm text-zinc-400">{v.category}</td>
-                          <td className="py-6 text-sm text-zinc-400">{v.location}, {v.state}</td>
-                          <td className="py-6">
-                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${v.plan === 'Premium' ? 'bg-emerald-600/20 text-emerald-500' : 'bg-zinc-800 text-zinc-400'}`}>
-                              {v.plan}
-                            </span>
-                          </td>
-                          <td className="py-6">
-                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${v.status === 'approved' ? 'bg-emerald-600/10 text-emerald-500' :
-                              v.status === 'pending' ? 'bg-amber-600/10 text-amber-500' :
-                                'bg-red-600/10 text-red-500'
-                              }`}>
-                              {v.status === 'approved' ? 'Aprovado' : v.status === 'pending' ? 'Pendente' : 'Rejeitado'}
-                            </span>
-                          </td>
-                          <td className="py-6 text-right pr-4">
-                            <div className="flex justify-end gap-2">
-                              {v.status === 'pending' && (
-                                <>
-                                  <button onClick={() => approveVendor(v.id)} className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"><UserCheck size={18} /></button>
-                                  <button onClick={() => rejectVendor(v.id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"><UserX size={18} /></button>
-                                </>
-                              )}
-                              <button className="p-2 text-zinc-600 hover:text-white transition-colors"><Search size={18} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {adminTab === 'finances' && (
-              <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="bg-zinc-950 p-10 rounded-[40px] border border-white/5 space-y-6">
-                    <h4 className="text-xl font-bold flex items-center gap-3"><PieChart className="text-red-500" /> Origem da Receita</h4>
-                    <div className="h-64 flex items-center justify-center border-b border-white/5">
-                      <div className="relative w-48 h-48 rounded-full border-[20px] border-zinc-900 flex items-center justify-center">
-                        <div className="absolute inset-0 rounded-full border-[20px] border-red-600 border-l-transparent border-b-transparent rotate-45"></div>
-                        <div className="text-center">
-                          <p className="text-[10px] font-black uppercase text-zinc-500">Faturamento</p>
-                          <p className="text-2xl font-black">100%</p>
-                        </div>
+                      <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white border border-white/10">
+                        {video.category}
                       </div>
                     </div>
-                    <div className="space-y-4 pt-4">
-                      <div className="flex justify-between items-center"><span className="flex items-center gap-2 text-sm text-zinc-400"><div className="w-3 h-3 bg-red-600 rounded-full"></div> Noivas Premium</span><span className="font-bold">R$ {(allUsers.filter(u => u.role === 'noiva' && u.plan === 'Premium').length * PREMIUM_PRICE_NOIVA).toLocaleString()}</span></div>
-                      <div className="flex justify-between items-center"><span className="flex items-center gap-2 text-sm text-zinc-400"><div className="w-3 h-3 bg-emerald-600 rounded-full"></div> Fornecedores Premium</span><span className="font-bold">R$ {(vendors.filter(v => v.plan === 'Premium' && v.status === 'approved').length * PREMIUM_PRICE_FORNECEDOR).toLocaleString()}</span></div>
+                    <div className="space-y-2 px-2">
+                      <h3 className="text-xl font-bold group-hover:text-red-500 transition-colors">{video.title}</h3>
+                      <p className="text-zinc-500 text-sm line-clamp-2">{video.description}</p>
                     </div>
                   </div>
-
-                  <div className="bg-zinc-950 p-10 rounded-[40px] border border-white/5 space-y-8">
-                    <h4 className="text-xl font-bold">Últimas Transações</h4>
-                    <div className="space-y-4">
-                      {[
-                        { name: 'Ana Oliveira', val: PREMIUM_PRICE_NOIVA, date: 'Hoje', plan: 'Noiva Premium' },
-                        { name: 'Foco Criativo', val: PREMIUM_PRICE_FORNECEDOR, date: 'Ontem', plan: 'Fornecedor Premium' },
-                        { name: 'Juliana Silva', val: PREMIUM_PRICE_NOIVA, date: 'Há 2 dias', plan: 'Noiva Premium' },
-                        { name: 'Banda Show', val: PREMIUM_PRICE_FORNECEDOR, date: 'Há 3 dias', plan: 'Fornecedor Premium' }
-                      ].map((t, i) => (
-                        <div key={i} className="flex justify-between items-center p-5 bg-zinc-900/50 rounded-2xl border border-white/5">
-                          <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white/5 text-emerald-500 rounded-xl"><ArrowUpRight size={16} /></div>
-                            <div><p className="font-bold text-sm">{t.name}</p><p className="text-[10px] text-zinc-500 uppercase tracking-widest">{t.plan}</p></div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-black text-emerald-500">+ R$ {t.val.toLocaleString()}</p>
-                            <p className="text-[10px] text-zinc-600 uppercase font-black">{t.date}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
           </div>
         )}
+
+        <Modal isOpen={!!activeVideo} onClose={() => setActiveVideo(null)} title={activeVideo?.title || 'Assistir Vídeo'}>
+          {activeVideo && (
+            <div className="space-y-6">
+              <div className="aspect-video bg-black rounded-2xl overflow-hidden border border-white/10">
+                <iframe
+                  src={activeVideo.videoUrl.replace('watch?v=', 'embed/').replace('vimeo.com/', 'player.vimeo.com/video/')}
+                  className="w-full h-full"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <span className="bg-red-600 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">{activeVideo.category}</span>
+                  {activeVideo.duration && <span className="text-zinc-500 text-xs flex items-center gap-1"><Clock size={14} /> {activeVideo.duration}</span>}
+                </div>
+                <h3 className="text-2xl font-bold">{activeVideo.title}</h3>
+                <p className="text-zinc-400 leading-relaxed">{activeVideo.description}</p>
+              </div>
+            </div>
+          )}
+        </Modal>
 
         {currentView === AppView.BUDGET && user && (
           <ExpensesScreen userId={user.id} />
@@ -1894,406 +1787,384 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {currentView === AppView.STREAMING && (
-          <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
-            <h2 className="text-5xl font-serif">Original Noivaflix</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                {videos.length === 0 ? (
-                  <div className="col-span-3 text-center py-20 bg-zinc-900/40 rounded-[40px] border border-white/5">
-                    <VideoIcon className="mx-auto text-zinc-700 mb-4" size={48} />
-                    <p className="text-zinc-500">Nenhum vídeo disponível no momento.</p>
-                  </div>
+
+
+        {/* Video Player Modal */}
+        {activeVideo && (
+          <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setActiveVideo(null)}>
+            <div className="w-full max-w-5xl bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10" onClick={e => e.stopPropagation()}>
+              <button onClick={() => setActiveVideo(null)} className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20"><X size={24} /></button>
+              <div className="aspect-video w-full bg-black">
+                {activeVideo.videoUrl.includes('youtube.com') || activeVideo.videoUrl.includes('youtu.be') ? (
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${activeVideo.videoUrl.split('v=')[1]?.split('&')[0] || activeVideo.videoUrl.split('/').pop()}?autoplay=1`}
+                    title={activeVideo.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
                 ) : (
-                  videos.map(v => (
-                    <div key={v.id} className="group cursor-pointer space-y-4" onClick={() => setActiveVideo(v)}>
-                      <div className="relative aspect-video rounded-[32px] overflow-hidden border border-white/5"><img src={v.thumbnail} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700" /><div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"><Play fill="white" size={32} /></div></div>
-                      <div className="px-2"><span className="text-red-500 font-black text-[10px] uppercase tracking-widest">{v.category}</span><h4 className="text-xl font-bold mt-1 text-white">{v.title}</h4></div>
-                    </div>
-                  ))
+                  <video src={activeVideo.videoUrl} controls autoPlay className="w-full h-full" />
                 )}
               </div>
+              <div className="p-8">
+                <span className="text-red-500 font-black text-xs uppercase tracking-widest">{activeVideo.category}</span>
+                <h3 className="text-3xl font-bold mt-2 mb-4">{activeVideo.title}</h3>
+                <p className="text-zinc-400">{activeVideo.description || 'Sem descrição.'}</p>
+              </div>
             </div>
+          </div>
         )}
 
-            {/* Video Player Modal */}
-            {activeVideo && (
-              <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4" onClick={() => setActiveVideo(null)}>
-                <div className="w-full max-w-5xl bg-black rounded-3xl overflow-hidden shadow-2xl relative border border-white/10" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setActiveVideo(null)} className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20"><X size={24} /></button>
-                  <div className="aspect-video w-full bg-black">
-                    {activeVideo.videoUrl.includes('youtube.com') || activeVideo.videoUrl.includes('youtu.be') ? (
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={`https://www.youtube.com/embed/${activeVideo.videoUrl.split('v=')[1]?.split('&')[0] || activeVideo.videoUrl.split('/').pop()}?autoplay=1`}
-                        title={activeVideo.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      ></iframe>
-                    ) : (
-                      <video src={activeVideo.videoUrl} controls autoPlay className="w-full h-full" />
-                    )}
+        {currentView === AppView.VENDORS && (
+          <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
+            <header className="space-y-8">
+              <h2 className="text-5xl font-serif">Time dos Sonhos</h2>
+              <div className="bg-zinc-900/50 p-8 rounded-[40px] border border-white/5 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                    <input
+                      value={vendorSearch.query}
+                      onChange={e => setVendorSearch({ ...vendorSearch, query: e.target.value })}
+                      placeholder="Nome do fornecedor..."
+                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                    />
                   </div>
-                  <div className="p-8">
-                    <span className="text-red-500 font-black text-xs uppercase tracking-widest">{activeVideo.category}</span>
-                    <h3 className="text-3xl font-bold mt-2 mb-4">{activeVideo.title}</h3>
-                    <p className="text-zinc-400">{activeVideo.description || 'Sem descrição.'}</p>
+                  <div className="relative">
+                    <input
+                      list="vendor-categories-list"
+                      value={vendorSearch.category}
+                      onChange={e => setVendorSearch({ ...vendorSearch, category: e.target.value })}
+                      placeholder="Categoria (ex: Buffet...)"
+                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                    />
+                    <datalist id="vendor-categories-list">
+                      <option value="Espaço" />
+                      <option value="Fotografia" />
+                      <option value="Decoração" />
+                      <option value="Música" />
+                      <option value="Buffet" />
+                      <option value="Assessoria" />
+                    </datalist>
+                  </div>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                    <input
+                      value={vendorSearch.city}
+                      onChange={e => setVendorSearch({ ...vendorSearch, city: e.target.value })}
+                      placeholder="Cidade"
+                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                    />
+                  </div>
+                  <div className="relative">
+                    <input
+                      maxLength={2}
+                      value={vendorSearch.state}
+                      onChange={e => setVendorSearch({ ...vendorSearch, state: e.target.value.toUpperCase() })}
+                      placeholder="Estado (UF)"
+                      className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
+                    />
                   </div>
                 </div>
               </div>
-            )}
+            </header>
 
-            {currentView === AppView.VENDORS && (
-              <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
-                <header className="space-y-8">
-                  <h2 className="text-5xl font-serif">Time dos Sonhos</h2>
-                  <div className="bg-zinc-900/50 p-8 rounded-[40px] border border-white/5 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-                        <input
-                          value={vendorSearch.query}
-                          onChange={e => setVendorSearch({ ...vendorSearch, query: e.target.value })}
-                          placeholder="Nome do fornecedor..."
-                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                        />
+            {brideFilteredVendors.length === 0 ? (
+              <div className="py-20 text-center space-y-4">
+                <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto text-zinc-600">
+                  <FilterX size={32} />
+                </div>
+                <h3 className="text-2xl font-bold">Nenhum fornecedor encontrado</h3>
+                <p className="text-zinc-500">Tente ajustar seus filtros ou buscar por outros termos.</p>
+                <button
+                  onClick={() => setVendorSearch({ query: '', category: '', city: '', state: '' })}
+                  className="text-red-500 font-bold hover:underline"
+                >
+                  Limpar todos os filtros
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {brideFilteredVendors.map(vendor => (
+                  <div
+                    key={vendor.id}
+                    onClick={() => {
+                      setSelectedVendor(vendor);
+                      setActiveModal('supplier_details');
+                      handleTrackView(vendor);
+                    }}
+                    className="bg-zinc-900 rounded-[40px] overflow-hidden border border-white/5 group hover:border-red-600/40 transition-all cursor-pointer"
+                  >
+                    <div className="h-60 relative">
+                      <img src={vendor.image} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
+                      <div className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full text-xs font-bold text-amber-500 flex items-center gap-1">
+                        <Sparkles size={12} /> {vendor.rating}
                       </div>
-                      <div className="relative">
-                        <input
-                          list="vendor-categories-list"
-                          value={vendorSearch.category}
-                          onChange={e => setVendorSearch({ ...vendorSearch, category: e.target.value })}
-                          placeholder="Categoria (ex: Buffet...)"
-                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                        />
-                        <datalist id="vendor-categories-list">
-                          <option value="Espaço" />
-                          <option value="Fotografia" />
-                          <option value="Decoração" />
-                          <option value="Música" />
-                          <option value="Buffet" />
-                          <option value="Assessoria" />
-                        </datalist>
-                      </div>
-                      <div className="relative">
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-                        <input
-                          value={vendorSearch.city}
-                          onChange={e => setVendorSearch({ ...vendorSearch, city: e.target.value })}
-                          placeholder="Cidade"
-                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl pl-12 pr-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                        />
-                      </div>
-                      <div className="relative">
-                        <input
-                          maxLength={2}
-                          value={vendorSearch.state}
-                          onChange={e => setVendorSearch({ ...vendorSearch, state: e.target.value.toUpperCase() })}
-                          placeholder="Estado (UF)"
-                          className="w-full bg-zinc-800 border border-white/5 rounded-2xl px-6 py-4 outline-none focus:ring-1 ring-red-600 text-sm text-white"
-                        />
+                    </div>
+                    <div className="p-8 space-y-3">
+                      <h4 className="text-2xl font-bold">{vendor.name}</h4>
+                      <p className="text-zinc-500 text-sm line-clamp-2">{vendor.description}</p>
+                      <div className="flex flex-wrap items-center gap-2 text-zinc-600 text-[10px] font-black uppercase pt-4 tracking-widest">
+                        <span className="bg-zinc-800 px-3 py-1 rounded-lg text-white/80">{vendor.category}</span>
+                        <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-lg">
+                          <MapPin size={12} /> {vendor.location}, {vendor.state}
+                        </span>
                       </div>
                     </div>
                   </div>
-                </header>
-
-                {brideFilteredVendors.length === 0 ? (
-                  <div className="py-20 text-center space-y-4">
-                    <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto text-zinc-600">
-                      <FilterX size={32} />
-                    </div>
-                    <h3 className="text-2xl font-bold">Nenhum fornecedor encontrado</h3>
-                    <p className="text-zinc-500">Tente ajustar seus filtros ou buscar por outros termos.</p>
-                    <button
-                      onClick={() => setVendorSearch({ query: '', category: '', city: '', state: '' })}
-                      className="text-red-500 font-bold hover:underline"
-                    >
-                      Limpar todos os filtros
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {brideFilteredVendors.map(vendor => (
-                      <div
-                        key={vendor.id}
-                        onClick={() => {
-                          setSelectedVendor(vendor);
-                          setActiveModal('supplier_details');
-                          handleTrackView(vendor);
-                        }}
-                        className="bg-zinc-900 rounded-[40px] overflow-hidden border border-white/5 group hover:border-red-600/40 transition-all cursor-pointer"
-                      >
-                        <div className="h-60 relative">
-                          <img src={vendor.image} className="w-full h-full object-cover group-hover:scale-105 transition-all" />
-                          <div className="absolute top-4 right-4 bg-black/60 px-3 py-1 rounded-full text-xs font-bold text-amber-500 flex items-center gap-1">
-                            <Sparkles size={12} /> {vendor.rating}
-                          </div>
-                        </div>
-                        <div className="p-8 space-y-3">
-                          <h4 className="text-2xl font-bold">{vendor.name}</h4>
-                          <p className="text-zinc-500 text-sm line-clamp-2">{vendor.description}</p>
-                          <div className="flex flex-wrap items-center gap-2 text-zinc-600 text-[10px] font-black uppercase pt-4 tracking-widest">
-                            <span className="bg-zinc-800 px-3 py-1 rounded-lg text-white/80">{vendor.category}</span>
-                            <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-lg">
-                              <MapPin size={12} /> {vendor.location}, {vendor.state}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
             )}
-          </main>
+          </div>
+        )}
+      </main>
 
       {/* --- Modals --- */}
 
-        <Modal isOpen={activeModal === 'supplier_details' && !!selectedVendor} onClose={() => { setActiveModal(null); setSelectedVendor(null); }} title={selectedVendor?.name || 'Detalhes do Fornecedor'}>
-          {selectedVendor && (
-            <div className="space-y-10">
-              <div className="flex flex-col md:flex-row gap-8 items-start">
-                <img src={selectedVendor.image} className="w-40 h-40 rounded-3xl object-cover border-4 border-white/5" />
-                <div className="space-y-4 flex-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="bg-red-600 text-white text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">{selectedVendor.plan}</span>
-                    <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest flex items-center gap-2">
-                      <Sparkles size={12} className="text-amber-500" /> {selectedVendor.rating} Avaliação
-                    </span>
-                    <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">
-                      {selectedVendor.experience_years} Anos de Exp.
-                    </span>
-                  </div>
-                  <h3 className="text-4xl font-serif">{selectedVendor.name}</h3>
-                  <div className="flex items-center gap-2 text-zinc-500 text-sm">
-                    <MapPin size={16} /> <span>{selectedVendor.location}, {selectedVendor.state}</span>
-                  </div>
+      <Modal isOpen={activeModal === 'supplier_details' && !!selectedVendor} onClose={() => { setActiveModal(null); setSelectedVendor(null); }} title={selectedVendor?.name || 'Detalhes do Fornecedor'}>
+        {selectedVendor && (
+          <div className="space-y-10">
+            <div className="flex flex-col md:flex-row gap-8 items-start">
+              <img src={selectedVendor.image} className="w-40 h-40 rounded-3xl object-cover border-4 border-white/5" />
+              <div className="space-y-4 flex-1">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="bg-red-600 text-white text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">{selectedVendor.plan}</span>
+                  <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest flex items-center gap-2">
+                    <Sparkles size={12} className="text-amber-500" /> {selectedVendor.rating} Avaliação
+                  </span>
+                  <span className="bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-1.5 rounded-full tracking-widest">
+                    {selectedVendor.experience_years} Anos de Exp.
+                  </span>
+                </div>
+                <h3 className="text-4xl font-serif">{selectedVendor.name}</h3>
+                <div className="flex items-center gap-2 text-zinc-500 text-sm">
+                  <MapPin size={16} /> <span>{selectedVendor.location}, {selectedVendor.state}</span>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Sobre a Empresa</h4>
-                <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-3xl">
-                  <p className="text-zinc-400 leading-relaxed italic">"{selectedVendor.description}"</p>
-                </div>
-              </div>
-
-              {selectedVendor.portfolio && selectedVendor.portfolio.length > 0 && (
-                <div className="space-y-6">
-                  <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Portfólio em Destaque</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {selectedVendor.portfolio.map((img, idx) => (
-                      <img key={idx} src={img} className="w-full aspect-square object-cover rounded-2xl border border-white/5 hover:scale-105 transition-all cursor-zoom-in" />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-                {selectedVendor.whatsapp && (
-                  <a
-                    href={`https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => handleTrackLead(selectedVendor)}
-                    className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
-                  >
-                    <MessageCircle size={20} /> Orçamento via WhatsApp
-                  </a>
-                )}
-                {selectedVendor.instagram && (
-                  <a
-                    href={`https://instagram.com/${selectedVendor.instagram.replace('@', '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-center gap-3 bg-zinc-800 hover:bg-zinc-700 text-white py-6 rounded-2xl font-black uppercase transition-all"
-                  >
-                    <Instagram size={20} /> Ver Instagram
-                  </a>
-                )}
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Sobre a Empresa</h4>
+              <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-3xl">
+                <p className="text-zinc-400 leading-relaxed italic">"{selectedVendor.description}"</p>
               </div>
             </div>
-          )}
-        </Modal>
 
-
-
-
-
-        <Modal isOpen={activeModal === 'gallery_add'} onClose={() => setActiveModal(null)} title="Adicionar Foto">
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
-              <label className="block w-full">
-                <input type="file" accept="image/*" onChange={(e) => { handleSitePhotoUpload(e, true); setActiveModal(null); }} className="hidden" />
-                <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-red-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
-                  <div className="p-4 bg-red-600/10 text-red-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
-                  <span className="text-zinc-500 font-bold">Selecionar arquivo do PC ou Celular</span>
+            {selectedVendor.portfolio && selectedVendor.portfolio.length > 0 && (
+              <div className="space-y-6">
+                <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Portfólio em Destaque</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {selectedVendor.portfolio.map((img, idx) => (
+                    <img key={idx} src={img} className="w-full aspect-square object-cover rounded-2xl border border-white/5 hover:scale-105 transition-all cursor-zoom-in" />
+                  ))}
                 </div>
-              </label>
-            </div>
-            <div className="relative flex items-center py-4">
-              <div className="flex-grow border-t border-white/5"></div>
-              <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
-              <div className="flex-grow border-t border-white/5"></div>
-            </div>
-            <div className="space-y-4">
-              <input id="photo-input-noiva" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-red-600 text-white text-sm" />
-              <button onClick={() => { addPhotoToAlbum((document.getElementById('photo-input-noiva') as HTMLInputElement).value); }} className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Adicionar via URL</button>
-            </div>
-          </div>
-        </Modal>
-
-        <Modal isOpen={activeModal === 'gallery_add_supplier'} onClose={() => setActiveModal(null)} title="Foto do Portfólio">
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
-              <label className="block w-full">
-                <input type="file" accept="image/*" onChange={(e) => { handleSupplierPortfolioUpload(e); setActiveModal(null); }} className="hidden" />
-                <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-emerald-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
-                  <div className="p-4 bg-emerald-600/10 text-emerald-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
-                  <span className="text-zinc-500 font-bold">Selecionar arquivo</span>
-                </div>
-              </label>
-            </div>
-            <div className="relative flex items-center py-4">
-              <div className="flex-grow border-t border-white/5"></div>
-              <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
-              <div className="flex-grow border-t border-white/5"></div>
-            </div>
-            <div className="space-y-4">
-              <input id="photo-input-supp" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white text-sm" />
-              <button onClick={() => { addPhotoToPortfolio((document.getElementById('photo-input-supp') as HTMLInputElement).value); }} className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-emerald-700 transition-all">Salvar via URL</button>
-            </div>
-          </div>
-        </Modal>
-
-        <Modal isOpen={activeModal === ('rsvp' as any)} onClose={() => setActiveModal(null)} title="Confirmar Presença">
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.currentTarget);
-            submitRSVP(siteData.slug, {
-              name: formData.get('name'),
-              phone: formData.get('phone'),
-              confirmed: true
-            });
-          }} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu Nome Completo</label>
-              <input name="name" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="Ex: Maria Souza" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu WhatsApp</label>
-              <input name="phone" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="(11) 99999-9999" />
-            </div>
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
-              <p className="text-emerald-500 font-bold mb-1">Deseja confirmar sua presença?</p>
-              <p className="text-[10px] text-emerald-500/60 uppercase tracking-widest">Aguardamos você neste dia especial!</p>
-            </div>
-            <button type="submit" className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Confirmar Agora</button>
-          </form>
-        </Modal>
-
-        <Modal isOpen={activeModal === 'cover_crop'} onClose={() => setActiveModal(null)} title="Ajustar Foto de Capa">
-          <div className="p-2">
-            {tempCropImage && (
-              <ImageCropper
-                image={tempCropImage}
-                aspectRatio={16 / 9}
-                onCropComplete={async (croppedBlob) => {
-                  await handleSitePhotoUpload(croppedBlob, false);
-                  setActiveModal(null);
-                  setTempCropImage(null);
-                }}
-                onCancel={() => {
-                  setActiveModal(null);
-                  setTempCropImage(null);
-                }}
-              />
+              </div>
             )}
-          </div>
-        </Modal>
 
-        {user?.role === 'noiva' && isAIChatOpen && (
-          <div className="fixed bottom-24 lg:bottom-40 right-6 lg:right-12 w-[calc(100vw-48px)] md:w-[450px] h-[600px] max-h-[70vh] bg-zinc-950 border border-white/10 rounded-[40px] shadow-2xl z-[200] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
-            <header className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-600/20">
-                  <Sparkles size={24} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-white">Madrinha IA</h3>
-                  <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest flex items-center gap-2">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Online agora
-                  </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+              {selectedVendor.whatsapp && (
+                <a
+                  href={`https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => handleTrackLead(selectedVendor)}
+                  className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
+                >
+                  <MessageCircle size={20} /> Orçamento via WhatsApp
+                </a>
+              )}
+              {selectedVendor.instagram && (
+                <a
+                  href={`https://instagram.com/${selectedVendor.instagram.replace('@', '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-3 bg-zinc-800 hover:bg-zinc-700 text-white py-6 rounded-2xl font-black uppercase transition-all"
+                >
+                  <Instagram size={20} /> Ver Instagram
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+
+
+
+
+      <Modal isOpen={activeModal === 'gallery_add'} onClose={() => setActiveModal(null)} title="Adicionar Foto">
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
+            <label className="block w-full">
+              <input type="file" accept="image/*" onChange={(e) => { handleSitePhotoUpload(e, true); setActiveModal(null); }} className="hidden" />
+              <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-red-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
+                <div className="p-4 bg-red-600/10 text-red-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
+                <span className="text-zinc-500 font-bold">Selecionar arquivo do PC ou Celular</span>
+              </div>
+            </label>
+          </div>
+          <div className="relative flex items-center py-4">
+            <div className="flex-grow border-t border-white/5"></div>
+            <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
+            <div className="flex-grow border-t border-white/5"></div>
+          </div>
+          <div className="space-y-4">
+            <input id="photo-input-noiva" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-red-600 text-white text-sm" />
+            <button onClick={() => { addPhotoToAlbum((document.getElementById('photo-input-noiva') as HTMLInputElement).value); }} className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Adicionar via URL</button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={activeModal === 'gallery_add_supplier'} onClose={() => setActiveModal(null)} title="Foto do Portfólio">
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Upload do Dispositivo</label>
+            <label className="block w-full">
+              <input type="file" accept="image/*" onChange={(e) => { handleSupplierPortfolioUpload(e); setActiveModal(null); }} className="hidden" />
+              <div className="w-full bg-zinc-900 border border-dashed border-white/10 hover:border-emerald-600/50 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-all group">
+                <div className="p-4 bg-emerald-600/10 text-emerald-500 rounded-full group-hover:scale-110 transition-all"><Upload size={24} /></div>
+                <span className="text-zinc-500 font-bold">Selecionar arquivo</span>
+              </div>
+            </label>
+          </div>
+          <div className="relative flex items-center py-4">
+            <div className="flex-grow border-t border-white/5"></div>
+            <span className="flex-shrink mx-4 text-zinc-700 text-[10px] font-black uppercase tracking-widest">ou use uma URL</span>
+            <div className="flex-grow border-t border-white/5"></div>
+          </div>
+          <div className="space-y-4">
+            <input id="photo-input-supp" placeholder="https://exemplo.com/foto.jpg" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white text-sm" />
+            <button onClick={() => { addPhotoToPortfolio((document.getElementById('photo-input-supp') as HTMLInputElement).value); }} className="w-full bg-emerald-600 text-white py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-emerald-700 transition-all">Salvar via URL</button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal isOpen={activeModal === ('rsvp' as any)} onClose={() => setActiveModal(null)} title="Confirmar Presença">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          submitRSVP(siteData.slug, {
+            name: formData.get('name'),
+            phone: formData.get('phone'),
+            confirmed: true
+          });
+        }} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu Nome Completo</label>
+            <input name="name" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="Ex: Maria Souza" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu WhatsApp</label>
+            <input name="phone" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="(11) 99999-9999" />
+          </div>
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
+            <p className="text-emerald-500 font-bold mb-1">Deseja confirmar sua presença?</p>
+            <p className="text-[10px] text-emerald-500/60 uppercase tracking-widest">Aguardamos você neste dia especial!</p>
+          </div>
+          <button type="submit" className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Confirmar Agora</button>
+        </form>
+      </Modal>
+
+      <Modal isOpen={activeModal === 'cover_crop'} onClose={() => setActiveModal(null)} title="Ajustar Foto de Capa">
+        <div className="p-2">
+          {tempCropImage && (
+            <ImageCropper
+              image={tempCropImage}
+              aspectRatio={16 / 9}
+              onCropComplete={async (croppedBlob) => {
+                await handleSitePhotoUpload(croppedBlob, false);
+                setActiveModal(null);
+                setTempCropImage(null);
+              }}
+              onCancel={() => {
+                setActiveModal(null);
+                setTempCropImage(null);
+              }}
+            />
+          )}
+        </div>
+      </Modal>
+
+      {user?.role === 'noiva' && isAIChatOpen && (
+        <div className="fixed bottom-24 lg:bottom-40 right-6 lg:right-12 w-[calc(100vw-48px)] md:w-[450px] h-[600px] max-h-[70vh] bg-zinc-950 border border-white/10 rounded-[40px] shadow-2xl z-[200] flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
+          <header className="p-8 border-b border-white/5 flex justify-between items-center bg-zinc-900/50">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-red-600/20">
+                <Sparkles size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white">Madrinha IA</h3>
+                <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> Online agora
+                </p>
+              </div>
+            </div>
+            <button onClick={() => setIsAIChatOpen(false)} className="p-3 hover:bg-white/5 rounded-xl transition-all text-zinc-500 hover:text-white">
+              <Plus className="rotate-45" size={20} />
+            </button>
+          </header>
+
+          <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar bg-gradient-to-b from-transparent to-black/20">
+            {chatMessages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                <div className={`max-w-[85%] p-5 rounded-[24px] text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-red-600 text-white rounded-tr-none' : 'bg-zinc-900 text-zinc-300 border border-white/5 rounded-tl-none'}`}>
+                  {m.text}
                 </div>
               </div>
-              <button onClick={() => setIsAIChatOpen(false)} className="p-3 hover:bg-white/5 rounded-xl transition-all text-zinc-500 hover:text-white">
-                <Plus className="rotate-45" size={20} />
-              </button>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-8 space-y-6 no-scrollbar bg-gradient-to-b from-transparent to-black/20">
-              {chatMessages.map((m, i) => (
-                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                  <div className={`max-w-[85%] p-5 rounded-[24px] text-sm leading-relaxed shadow-sm ${m.role === 'user' ? 'bg-red-600 text-white rounded-tr-none' : 'bg-zinc-900 text-zinc-300 border border-white/5 rounded-tl-none'}`}>
-                    {m.text}
-                  </div>
+            ))}
+            {isThinking && (
+              <div className="flex justify-start animate-pulse">
+                <div className="bg-zinc-900 p-5 rounded-[24px] rounded-tl-none border border-white/5 flex gap-2 items-center text-zinc-500 italic text-sm">
+                  <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce"></span>
+                  <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                  <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                 </div>
-              ))}
-              {isThinking && (
-                <div className="flex justify-start animate-pulse">
-                  <div className="bg-zinc-900 p-5 rounded-[24px] rounded-tl-none border border-white/5 flex gap-2 items-center text-zinc-500 italic text-sm">
-                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce"></span>
-                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                    <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                  </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div className="p-6 bg-zinc-900/50 border-t border-white/5">
-              <form
-                onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-                className="relative flex items-center gap-3 bg-zinc-950 border border-white/10 rounded-2xl p-2 pl-5 focus-within:border-red-600/50 transition-all"
-              >
-                <input
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  placeholder="Pergunte qualquer coisa..."
-                  className="flex-1 bg-transparent border-none outline-none text-sm text-white py-3"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim() || isThinking}
-                  className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 disabled:grayscale shadow-lg shadow-red-600/20"
-                >
-                  <Send size={18} />
-                </button>
-              </form>
-            </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
           </div>
-        )}
 
-        {user?.role === 'noiva' && (
-          <button onClick={() => setIsAIChatOpen(!isAIChatOpen)} className={`fixed bottom-24 lg:bottom-12 right-6 lg:right-12 w-20 h-20 bg-red-600 rounded-[28px] flex items-center justify-center shadow-2xl z-[101] text-white hover:scale-110 active:scale-95 transition-all ${isAIChatOpen ? 'hidden' : 'flex'}`}><MessageSquare size={32} /></button>
-        )}
+          <div className="p-6 bg-zinc-900/50 border-t border-white/5">
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
+              className="relative flex items-center gap-3 bg-zinc-950 border border-white/10 rounded-2xl p-2 pl-5 focus-within:border-red-600/50 transition-all"
+            >
+              <input
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                placeholder="Pergunte qualquer coisa..."
+                className="flex-1 bg-transparent border-none outline-none text-sm text-white py-3"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim() || isThinking}
+                className="p-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all disabled:opacity-50 disabled:grayscale shadow-lg shadow-red-600/20"
+              >
+                <Send size={18} />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
-        <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-black border-t border-white/5 p-4 flex justify-around items-center z-[90]">
-          <button onClick={() => setCurrentView(AppView.DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.DASHBOARD ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><LayoutDashboard /></button>
-          <button onClick={() => setCurrentView(AppView.STREAMING)} className={`p-3 transition-all ${currentView === AppView.STREAMING ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><VideoIcon /></button>
-          <button onClick={() => setCurrentView(AppView.VENDORS)} className={`p-3 transition-all ${currentView === AppView.VENDORS ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Store /></button>
-          {user?.role === 'noiva' && <button onClick={() => setCurrentView(AppView.SITE_BUILDER)} className={`p-3 transition-all ${currentView === AppView.SITE_BUILDER ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Globe /></button>}
-          {user?.role === 'fornecedor' && <button onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.SUPPLIER_DASHBOARD ? 'text-emerald-500 scale-125' : 'text-zinc-600'}`}><UserIcon /></button>}
-          {user?.role === 'admin' && <button onClick={() => setCurrentView(AppView.ADMIN_PANEL)} className={`p-3 transition-all ${currentView === AppView.ADMIN_PANEL ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Database /></button>}
-        </nav>
+      {user?.role === 'noiva' && (
+        <button onClick={() => setIsAIChatOpen(!isAIChatOpen)} className={`fixed bottom-24 lg:bottom-12 right-6 lg:right-12 w-20 h-20 bg-red-600 rounded-[28px] flex items-center justify-center shadow-2xl z-[101] text-white hover:scale-110 active:scale-95 transition-all ${isAIChatOpen ? 'hidden' : 'flex'}`}><MessageSquare size={32} /></button>
+      )}
 
-        <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }.font-serif { font-family: 'Playfair Display', serif; }`}</style>
+      <nav className="lg:hidden fixed bottom-0 left-0 w-full bg-black border-t border-white/5 p-4 flex justify-around items-center z-[90]">
+        <button onClick={() => setCurrentView(AppView.DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.DASHBOARD ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><LayoutDashboard /></button>
+        <button onClick={() => setCurrentView(AppView.STREAMING)} className={`p-3 transition-all ${currentView === AppView.STREAMING ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><VideoIcon /></button>
+        <button onClick={() => setCurrentView(AppView.VENDORS)} className={`p-3 transition-all ${currentView === AppView.VENDORS ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Store /></button>
+        {user?.role === 'noiva' && <button onClick={() => setCurrentView(AppView.SITE_BUILDER)} className={`p-3 transition-all ${currentView === AppView.SITE_BUILDER ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Globe /></button>}
+        {user?.role === 'fornecedor' && <button onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.SUPPLIER_DASHBOARD ? 'text-emerald-500 scale-125' : 'text-zinc-600'}`}><UserIcon /></button>}
+        {user?.role === 'admin' && <button onClick={() => setCurrentView(AppView.ADMIN_PANEL)} className={`p-3 transition-all ${currentView === AppView.ADMIN_PANEL ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Database /></button>}
+      </nav>
+
+      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }.font-serif { font-family: 'Playfair Display', serif; }`}</style>
     </div >
   );
 };
