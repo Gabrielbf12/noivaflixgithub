@@ -191,6 +191,7 @@ import { AdminPanel } from './components/AdminPanel';
 
 // Sub-componentes auxiliares para icones não definidos
 const ArrowUpRight = ({ size }: { size: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10" /><path d="M7 17 17 7" /></svg>;
+import { MonitorPlay } from 'lucide-react';
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -529,28 +530,19 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAddVideo = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const title = formData.get('title') as string;
-    const category = formData.get('category') as string;
-    const thumbnail = formData.get('thumbnail') as string;
-    const videoUrl = formData.get('videoUrl') as string;
-
-    if (!title || !category || !videoUrl) return;
-
+  const handleAddVideo = async (videoData: { title: string; category: string; videoUrl: string; thumbnail: string }) => {
     try {
       const { error } = await supabase.from('videos').insert({
-        title,
-        category,
-        thumbnail_url: thumbnail,
-        video_url: videoUrl
+        title: videoData.title,
+        category: videoData.category,
+        thumbnail_url: videoData.thumbnail,
+        video_url: videoData.videoUrl
       });
 
       if (error) throw error;
       alert('✅ Vídeo adicionado com sucesso!');
       fetchVideos();
-      setActiveModal(null);
+      // Modal closing handled by component
     } catch (err: any) {
       alert('Erro ao adicionar vídeo: ' + err.message);
     }

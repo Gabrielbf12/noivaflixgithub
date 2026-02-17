@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { VideoUploadModal } from './VideoUploadModal';
 import {
     Users, Building2, Clock, TrendingUp, Check, X, Search, CheckCircle,
     PieChart, ArrowUpRight, Video as VideoIcon, Plus, Trash2, LayoutDashboard
@@ -18,7 +19,8 @@ interface AdminPanelProps {
     videos: Video[];
     onApproveVendor: (id: string) => void;
     onRejectVendor: (id: string) => void;
-    onAddVideo: (e: React.FormEvent<HTMLFormElement>) => void;
+    onRejectVendor: (id: string) => void;
+    onAddVideo: (data: { title: string; category: string; videoUrl: string; thumbnail: string }) => void;
     onDeleteVideo: (id: string) => void;
     activeTab: 'overview' | 'brides' | 'vendors' | 'finances' | 'videos';
 }
@@ -274,45 +276,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
 
                     {/* Add Video Modal */}
-                    {isAddVideoModalOpen && (
-                        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
-                            <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setIsAddVideoModalOpen(false)}></div>
-                            <div className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-[32px] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
-                                <header className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center">
-                                    <h3 className="text-xl font-bold text-white">Adicionar Novo Vídeo</h3>
-                                    <button onClick={() => setIsAddVideoModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-500 hover:text-white"><X size={20} /></button>
-                                </header>
-                                <div className="p-6 md:p-8">
-                                    <form onSubmit={(e) => { onAddVideo(e); setIsAddVideoModalOpen(false); }} className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Título do Vídeo</label>
-                                            <input name="title" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm text-white focus:border-red-600 transition-colors outline-none" placeholder="Ex: Guia de Casamento" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Categoria</label>
-                                                <select name="category" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm text-white focus:border-red-600 transition-colors outline-none appearance-none">
-                                                    <option>Planejamento</option>
-                                                    <option>Inspiração</option>
-                                                    <option>Tutorial</option>
-                                                    <option>Entrevista</option>
-                                                </select>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Thumbnail URL</label>
-                                                <input name="thumbnail" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm text-white focus:border-red-600 transition-colors outline-none" placeholder="https://..." />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">URL do Vídeo (YouTube/MP4)</label>
-                                            <input name="videoUrl" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm text-white focus:border-red-600 transition-colors outline-none" placeholder="https://..." />
-                                        </div>
-                                        <button type="submit" className="w-full bg-white text-black py-6 rounded-2xl font-black uppercase shadow-xl hover:bg-zinc-200 transition-all">Adicionar Vídeo</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    <VideoUploadModal
+                        isOpen={isAddVideoModalOpen}
+                        onClose={() => setIsAddVideoModalOpen(false)}
+                        onSave={onAddVideo}
+                    />
                 </div>
             )}
         </div>
