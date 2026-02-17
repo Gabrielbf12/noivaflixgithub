@@ -18,7 +18,7 @@ export default async function handler(req: any, res: any) {
                         quantity: 1,
                     },
                 ],
-                mode: 'payment', // or 'subscription'
+                mode: 'subscription', // Changed to subscription because the Price is recurring
                 success_url: `${req.headers.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${req.headers.origin}/assinatura`,
                 metadata: {
