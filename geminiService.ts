@@ -1,13 +1,19 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Fixed initialization to use process.env.API_KEY directly as per guidelines
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 export const getAIResponse = async (userMessage: string, weddingContext: any) => {
+  if (!API_KEY) {
+    console.error("VITE_GEMINI_API_KEY is missing. Please set it in your environment variables.");
+    return "Minha conexão espiritual está fraca... (Erro: Chave de API da IA não configurada)";
+  }
+
   try {
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-1.5-flash', // Using a stable model name, 'gemini-3-flash-preview' might be deprecated or wrong
       contents: userMessage,
       config: {
         systemInstruction: `Você é a "Madrinha", a assistente pessoal e amiga da noiva na plataforma Noivaflix. 
