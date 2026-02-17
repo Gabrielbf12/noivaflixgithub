@@ -20,6 +20,7 @@ interface AdminPanelProps {
     onRejectVendor: (id: string) => void;
     onAddVideo: (e: React.FormEvent<HTMLFormElement>) => void;
     onDeleteVideo: (id: string) => void;
+    activeTab: 'overview' | 'brides' | 'vendors' | 'finances' | 'videos';
 }
 
 const PREMIUM_PRICE_NOIVA = 47;
@@ -34,9 +35,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     onApproveVendor,
     onRejectVendor,
     onAddVideo,
-    onDeleteVideo
+    onDeleteVideo,
+    activeTab
 }) => {
-    const [adminTab, setAdminTab] = useState<'overview' | 'brides' | 'vendors' | 'finances' | 'videos'>('overview');
     const [isAddVideoModalOpen, setIsAddVideoModalOpen] = useState(false);
 
     return (
@@ -46,16 +47,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <h2 className="text-5xl font-serif text-white">Pro Painel Admin</h2>
                     <p className="text-zinc-500">Gestão global do ecossistema Noivaflix.</p>
                 </div>
-                <div className="flex bg-zinc-950 p-2 rounded-2xl border border-white/5 gap-2 overflow-x-auto no-scrollbar max-w-full">
-                    <button onClick={() => setAdminTab('overview')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${adminTab === 'overview' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500 hover:text-white'}`}>Visão Geral</button>
-                    <button onClick={() => setAdminTab('brides')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${adminTab === 'brides' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500 hover:text-white'}`}>Noivas</button>
-                    <button onClick={() => setAdminTab('vendors')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${adminTab === 'vendors' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500 hover:text-white'}`}>Fornecedores {adminStats.pendingVendors > 0 && <span className="ml-1 bg-red-600 text-white px-2 py-0.5 rounded-full text-[10px]">{adminStats.pendingVendors}</span>}</button>
-                    <button onClick={() => setAdminTab('finances')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${adminTab === 'finances' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500 hover:text-white'}`}>Financeiro</button>
-                    <button onClick={() => setAdminTab('videos')} className={`px-6 py-3 rounded-xl font-bold text-xs uppercase transition-all whitespace-nowrap ${adminTab === 'videos' ? 'bg-zinc-900 text-white shadow-xl' : 'text-zinc-500 hover:text-white'}`}>Conteúdos</button>
-                </div>
             </header>
 
-            {adminTab === 'overview' && (
+            {activeTab === 'overview' && (
                 <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div className="bg-zinc-900/40 p-8 rounded-[32px] border border-white/5 space-y-4 hover:bg-zinc-900/60 transition-colors">
@@ -104,7 +98,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
             )}
 
-            {adminTab === 'brides' && (
+            {activeTab === 'brides' && (
                 <div className="bg-zinc-900/20 p-6 md:p-10 rounded-[40px] border border-white/5 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
                     <div className="overflow-x-auto no-scrollbar">
                         <table className="w-full text-left">
@@ -148,7 +142,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
             )}
 
-            {adminTab === 'vendors' && (
+            {activeTab === 'vendors' && (
                 <div className="bg-zinc-900/20 p-6 md:p-10 rounded-[40px] border border-white/5 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
                     <div className="overflow-x-auto no-scrollbar">
                         <table className="w-full text-left">
@@ -208,7 +202,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
             )}
 
-            {adminTab === 'finances' && (
+            {activeTab === 'finances' && (
                 <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="bg-zinc-900/40 p-10 rounded-[40px] border border-white/5 space-y-6">
@@ -254,7 +248,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </div>
             )}
 
-            {adminTab === 'videos' && (
+            {activeTab === 'videos' && (
                 <div className="max-w-6xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                     <div className="flex justify-between items-center">
                         <h3 className="text-xl font-bold text-white">Gerenciar Vídeos</h3>

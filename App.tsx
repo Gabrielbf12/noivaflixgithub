@@ -1140,7 +1140,15 @@ const App: React.FC = () => {
             </>
           )}
           {user?.role === 'fornecedor' && (<NavItem icon={<LayoutDashboard size={20} />} label="Meu Painel" active={currentView === AppView.SUPPLIER_DASHBOARD} onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} />)}
-          {user?.role === 'admin' && (<NavItem icon={<Database size={20} />} label="Admin" active={currentView === AppView.ADMIN_PANEL} onClick={() => setCurrentView(AppView.ADMIN_PANEL)} />)}
+          {user?.role === 'admin' && (
+            <>
+              <NavItem icon={<LayoutDashboard size={20} />} label="Visão Geral" active={currentView === AppView.ADMIN_PANEL && adminTab === 'overview'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('overview'); }} />
+              <NavItem icon={<Users size={20} />} label="Noivas" active={currentView === AppView.ADMIN_PANEL && adminTab === 'brides'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('brides'); }} />
+              <NavItem icon={<Store size={20} />} label="Fornecedores" active={currentView === AppView.ADMIN_PANEL && adminTab === 'vendors'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('vendors'); }} />
+              <NavItem icon={<Wallet size={20} />} label="Financeiro" active={currentView === AppView.ADMIN_PANEL && adminTab === 'finances'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('finances'); }} />
+              <NavItem icon={<VideoIcon size={20} />} label="Conteúdos" active={currentView === AppView.ADMIN_PANEL && adminTab === 'videos'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('videos'); }} />
+            </>
+          )}
         </nav>
 
         {user?.role === 'noiva' && user?.subscriptionStatus !== 'active' && (
@@ -1277,6 +1285,7 @@ const App: React.FC = () => {
             onRejectVendor={rejectVendor}
             onAddVideo={handleAddVideo}
             onDeleteVideo={handleDeleteVideo}
+            activeTab={adminTab}
           />
         )}
 
