@@ -26,7 +26,7 @@ export const getAIResponse = async (userMessage: string, weddingContext: any) =>
     // Use the getGenerativeModel method.
 
     const model = ai.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-flash-latest",
       systemInstruction: `Você é a "Madrinha", a assistente pessoal e amiga da noiva na plataforma Noivaflix. 
         Seu lema é "RESPIRA". Seu objetivo é acalmar e ajudar, mas SEMPRE sendo **DIRETA e CONCISA**.
 
