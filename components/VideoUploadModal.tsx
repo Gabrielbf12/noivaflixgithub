@@ -53,7 +53,7 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('Planejamento');
     const [videoUrl, setVideoUrl] = useState('');
-    const [thumbnailType, setThumbnailType] = useState<'url' | 'upload' | 'auto'>('auto');
+    const [thumbnailType, setThumbnailType] = useState<'url' | 'upload' | 'auto' | 'capture'>('auto');
     const [thumbnailUrl, setThumbnailUrl] = useState(''); // For manual URL or finalized upload
 
     // Upload/Crop state
@@ -63,6 +63,11 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
     const [isUploading, setIsUploading] = useState(false);
 
+    // Capture state
+    const [captureTime, setCaptureTime] = useState(0);
+    const [videoDuration, setVideoDuration] = useState(0);
+    const [captureVideoRef, setCaptureVideoRef] = useState<HTMLVideoElement | null>(null);
+
     const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
         setCroppedAreaPixels(croppedAreaPixels);
     }, []);
@@ -71,7 +76,10 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
         if (e.target.files && e.target.files.length > 0) {
             const file = e.target.files[0];
             const reader = new FileReader();
-            reader.onload = () => setImageSrc(reader.result as string);
+            reader.onload = () => {
+                setImageSrc(reader.result as string);
+                setZoom(1);
+            };
             reader.readAsDataURL(file);
             setThumbnailType('upload');
         }
@@ -79,11 +87,30 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
 
     const handleVideoUrlChange = (url: string) => {
         setVideoUrl(url);
+        // Auto-detect YouTube for 'auto' mode
         if (thumbnailType === 'auto') {
-            const youtubeId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&]+)/)?.[1];
-            if (youtubeId) {
-                setThumbnailUrl(`https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`);
-            }
+            tryExtractYoutubeThumbnail(url);
+        }
+    };
+
+    const tryExtractYoutubeThumbnail = (url: string) => {
+        const youtubeId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&]+)/)?.[1];
+        if (youtubeId) {
+            setThumbnailUrl(`https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`);
+            return true;
+        }
+        return false;
+    };
+
+    const handleCaptureFrame = () => {
+        if (captureVideoRef) {
+            const canvas = document.createElement('canvas');
+            canvas.width = captureVideoRef.videoWidth;
+            canvas.height = captureVideoRef.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(captureVideoRef, 0, 0, canvas.width, canvas.height);
+            setImageSrc(canvas.toDataURL('image/jpeg'));
+            setThumbnailType('upload'); // Switch to upload/crop mode with captured image
         }
     };
 
@@ -96,33 +123,32 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
                 const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
                 const fileName = `thumbnail-${Date.now()}.jpg`;
 
+                // Try uploading to 'videos' bucket first, then 'public'
                 const { data, error } = await supabase.storage
-                    .from('videos') // Assuming 'videos' bucket exists
+                    .from('videos')
                     .upload(`${fileName}`, croppedImageBlob);
 
+                let publicUrl = '';
+
                 if (error) {
-                    // Fallback to public bucket if videos bucket fails? or alert
-                    console.error('Upload failed', error);
-                    // Try 'public' bucket just in case
+                    console.warn('Primary bucket upload failed, trying backup...', error);
                     const { data: publicData, error: publicError } = await supabase.storage
                         .from('public')
                         .upload(`thumbnails/${fileName}`, croppedImageBlob);
 
                     if (publicError) throw publicError;
-
-                    const { data: { publicUrl } } = supabase.storage.from('public').getPublicUrl(`thumbnails/${fileName}`);
-                    finalThumbnail = publicUrl;
+                    publicUrl = supabase.storage.from('public').getPublicUrl(`thumbnails/${fileName}`).data.publicUrl;
                 } else {
-                    const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(`${fileName}`);
-                    finalThumbnail = publicUrl;
+                    publicUrl = supabase.storage.from('videos').getPublicUrl(`${fileName}`).data.publicUrl;
                 }
+                finalThumbnail = publicUrl;
             }
 
             onSave({ title, category, videoUrl, thumbnail: finalThumbnail });
             onClose();
         } catch (error) {
             console.error('Error saving video:', error);
-            alert('Erro ao salvar vídeo (verifique o console).');
+            alert('Erro ao salvar vídeo. Verifique se a imagem é válida.');
         } finally {
             setIsUploading(false);
         }
@@ -157,21 +183,21 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">URL do Vídeo</label>
-                            <input value={videoUrl} onChange={e => handleVideoUrlChange(e.target.value)} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-sm text-white focus:border-red-600 transition-colors outline-none" placeholder="YouTube / Vimeo" />
+                            <input value={videoUrl} onChange={e => handleVideoUrlChange(e.target.value)} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-sm text-white focus:border-red-600 transition-colors outline-none" placeholder="YouTube / Vimeo / MP4" />
                         </div>
                     </div>
 
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Thumbnail (Capa)</label>
-                        <div className="flex gap-4 mb-4">
-                            <button onClick={() => setThumbnailType('auto')} className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${thumbnailType === 'auto' ? 'bg-zinc-800 text-white border border-white/10' : 'bg-zinc-900/50 text-zinc-500 hover:text-white'}`}>
-                                <MonitorPlay size={16} className="mx-auto mb-1" /> Automática
+                        <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Capa (Thumbnail)</label>
+                        <div className="flex gap-2 mb-4 p-1 bg-zinc-900 rounded-2xl border border-white/5">
+                            <button onClick={() => setThumbnailType('auto')} className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${thumbnailType === 'auto' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}>
+                                <MonitorPlay size={16} className="mx-auto mb-1" /> Auto (YouTube)
                             </button>
-                            <button onClick={() => setThumbnailType('upload')} className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${thumbnailType === 'upload' ? 'bg-zinc-800 text-white border border-white/10' : 'bg-zinc-900/50 text-zinc-500 hover:text-white'}`}>
-                                <Upload size={16} className="mx-auto mb-1" /> Upload
+                            <button onClick={() => setThumbnailType('upload')} className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${thumbnailType === 'upload' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}>
+                                <Upload size={16} className="mx-auto mb-1" /> Upload/Ajustar
                             </button>
-                            <button onClick={() => setThumbnailType('url')} className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${thumbnailType === 'url' ? 'bg-zinc-800 text-white border border-white/10' : 'bg-zinc-900/50 text-zinc-500 hover:text-white'}`}>
-                                <ImageIcon size={16} className="mx-auto mb-1" /> URL Link
+                            <button onClick={() => setThumbnailType('capture')} className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all ${thumbnailType === 'capture' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-white'}`}>
+                                <VideoIcon size={16} className="mx-auto mb-1" /> Print do Vídeo
                             </button>
                         </div>
 
@@ -180,13 +206,37 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
                                 {thumbnailUrl ? (
                                     <img src={thumbnailUrl} className="w-full h-full object-cover" />
                                 ) : (
-                                    <p className="text-zinc-500 text-xs">Cole o link do vídeo para gerar a capa.</p>
+                                    <div className="text-center p-8">
+                                        <p className="text-zinc-500 text-xs">Cole o link do YouTube acima para gerar automaticamente.</p>
+                                    </div>
                                 )}
                             </div>
                         )}
 
-                        {thumbnailType === 'url' && (
-                            <input value={thumbnailUrl} onChange={e => setThumbnailUrl(e.target.value)} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-sm text-white" placeholder="https://..." />
+                        {thumbnailType === 'capture' && (
+                            <div className="space-y-4">
+                                {videoUrl && !videoUrl.includes('youtube') && !videoUrl.includes('vimeo') ? (
+                                    <div className="bg-black rounded-2xl overflow-hidden border border-white/10 p-4">
+                                        <video
+                                            crossOrigin="anonymous"
+                                            ref={setCaptureVideoRef}
+                                            src={videoUrl}
+                                            className="w-full aspect-video rounded-lg mb-4"
+                                            controls
+                                            onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
+                                        />
+                                        <button onClick={handleCaptureFrame} className="w-full py-3 bg-red-600 text-white font-bold rounded-xl uppercase text-xs hover:bg-red-700 transition-colors">
+                                            Capturar Momento Atual
+                                        </button>
+                                        <p className="text-zinc-500 text-[10px] mt-2 text-center">Pause o vídeo no momento desejado e clique em Capturar.</p>
+                                    </div>
+                                ) : (
+                                    <div className="p-8 text-center bg-zinc-900/50 rounded-2xl border border-white/5 border-dashed">
+                                        <p className="text-zinc-400 text-sm">Esta função funciona melhor com arquivos de vídeo direto (MP4, WebM).</p>
+                                        <p className="text-zinc-600 text-xs mt-2">Para YouTube/Vimeo, use a opção "Auto" ou tire um print manual e use "Upload".</p>
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         {thumbnailType === 'upload' && (
@@ -201,22 +251,34 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
                                         </label>
                                     </div>
                                 ) : (
-                                    <div className="relative h-64 bg-black rounded-2xl overflow-hidden border border-white/10">
-                                        <Cropper
-                                            image={imageSrc}
-                                            crop={crop}
-                                            zoom={zoom}
-                                            aspect={16 / 9}
-                                            onCropChange={setCrop}
-                                            onCropComplete={onCropComplete}
-                                            onZoomChange={setZoom}
-                                        />
-                                    </div>
-                                )}
-                                {imageSrc && (
-                                    <div className="flex justify-between items-center text-xs text-zinc-500">
-                                        <span>Ajuste o zoom e posição</span>
-                                        <button onClick={() => setImageSrc(null)} className="text-red-500 hover:underline">Remover</button>
+                                    <div className="space-y-4">
+                                        <div className="relative h-64 bg-black rounded-2xl overflow-hidden border border-white/10">
+                                            <Cropper
+                                                image={imageSrc}
+                                                crop={crop}
+                                                zoom={zoom}
+                                                aspect={16 / 9}
+                                                onCropChange={setCrop}
+                                                onCropComplete={onCropComplete}
+                                                onZoomChange={setZoom}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs text-zinc-500">
+                                            <div className="flex gap-4 items-center">
+                                                <span>Zoom:</span>
+                                                <input
+                                                    type="range"
+                                                    value={zoom}
+                                                    min={1}
+                                                    max={3}
+                                                    step={0.1}
+                                                    aria-labelledby="Zoom"
+                                                    onChange={(e) => setZoom(Number(e.target.value))}
+                                                    className="accent-red-600"
+                                                />
+                                            </div>
+                                            <button onClick={() => setImageSrc(null)} className="text-red-500 hover:underline">Remover Imagem</button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -227,7 +289,7 @@ export const VideoUploadModal: React.FC<VideoUploadModalProps> = ({ isOpen, onCl
                 <div className="p-6 border-t border-white/5 bg-zinc-900/50">
                     <button
                         onClick={handleSave}
-                        disabled={isUploading || !title || !videoUrl}
+                        disabled={isUploading || !title || (!videoUrl && !imageSrc)}
                         className="w-full bg-white text-black py-4 rounded-xl font-black uppercase hover:bg-zinc-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {isUploading ? 'Salvando...' : <><Check size={18} /> Salvar Vídeo</>}
