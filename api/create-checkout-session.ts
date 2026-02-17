@@ -10,7 +10,7 @@ export default async function handler(req: any, res: any) {
             const { priceId, userId, userEmail } = req.body;
 
             // Create Checkout Session
-            const session = await stripe.checkout.sessions.create({
+            const sessionConfig: Stripe.Checkout.SessionCreateParams = {
                 payment_method_types: ['card'], // Add 'pix' if enabled in Stripe Dashboard
                 line_items: [
                     {
@@ -21,11 +21,16 @@ export default async function handler(req: any, res: any) {
                 mode: 'payment', // or 'subscription'
                 success_url: `${req.headers.origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${req.headers.origin}/assinatura`,
-                customer_email: userEmail,
                 metadata: {
                     userId: userId,
                 },
-            });
+            };
+
+            if (userEmail && userEmail.trim() !== '') {
+                sessionConfig.customer_email = userEmail;
+            }
+
+            const session = await stripe.checkout.sessions.create(sessionConfig);
 
             res.status(200).json({ sessionId: session.id, url: session.url });
         } catch (err: any) {
