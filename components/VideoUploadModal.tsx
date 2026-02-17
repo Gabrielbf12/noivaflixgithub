@@ -1,8 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
-import { X, Upload, MonitorPlay, Image as ImageIcon, Check } from 'lucide-react';
+import { X, Upload, MonitorPlay, Image as ImageIcon, Check, Video as VideoIcon } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { Point, Area } from 'react-easy-crop/types';
+// Define types locally if module import fails or just use 'any' temporarily if needed, 
+// but better to match the library's expected types. 
+// react-easy-crop exports these types usually from the main package in newer versions?
+// Let's try to define them to be safe and avoid the module resolution error.
+interface Point { x: number; y: number; }
+interface Area { x: number; y: number; width: number; height: number; }
 
 interface VideoUploadModalProps {
     isOpen: boolean;
