@@ -651,6 +651,10 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setUser(null);
+    setCurrentView(AppView.DASHBOARD);
+    window.location.reload();
   };
 
   const handleSupplierOnboardingComplete = (data: Partial<Vendor>) => {
@@ -1077,7 +1081,7 @@ const App: React.FC = () => {
             </button>
           )}
         </div>
-        <button onClick={() => setIsLoggedIn(false)} className="flex items-center gap-3 text-zinc-500 hover:text-red-500 transition-colors p-4"><LogOut size={20} /><span>Sair</span></button>
+        <button onClick={handleLogout} className="flex items-center gap-3 text-zinc-500 hover:text-red-500 transition-colors p-4"><LogOut size={20} /><span>Sair</span></button>
       </aside>
 
       <main className="flex-1 overflow-y-auto no-scrollbar relative p-6 lg:p-12 xl:p-20 pb-32">
