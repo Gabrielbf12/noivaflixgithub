@@ -664,6 +664,24 @@ const App: React.FC = () => {
     setCurrentView(AppView.SUPPLIER_DASHBOARD);
   };
 
+  const handleTrackView = async (vendor: Vendor) => {
+    if (!vendor.id || vendor.id.startsWith('v')) return;
+    try {
+      await supabase.rpc('increment_views', { vendor_id: vendor.id });
+    } catch (err) {
+      console.error('Error tracking view:', err);
+    }
+  };
+
+  const handleTrackLead = async (vendor: Vendor) => {
+    if (!vendor.id || vendor.id.startsWith('v')) return;
+    try {
+      await supabase.rpc('increment_leads', { vendor_id: vendor.id });
+    } catch (err) {
+      console.error('Error tracking lead:', err);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!chatInput.trim() || !user) return;
     const msg = chatInput; setChatInput('');
@@ -1898,6 +1916,7 @@ const App: React.FC = () => {
                     onClick={() => {
                       setSelectedVendor(vendor);
                       setActiveModal('supplier_details');
+                      handleTrackView(vendor);
                     }}
                     className="bg-zinc-900 rounded-[40px] overflow-hidden border border-white/5 group hover:border-red-600/40 transition-all cursor-pointer"
                   >
@@ -1973,6 +1992,9 @@ const App: React.FC = () => {
                   href={`https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}`}
                   target="_blank"
                   rel="noreferrer"
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => handleTrackLead(selectedVendor)}
                   className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
                 >
                   <MessageCircle size={20} /> Orçamento via WhatsApp
