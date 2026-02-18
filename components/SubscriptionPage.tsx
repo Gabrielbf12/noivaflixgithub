@@ -46,11 +46,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
             if (url) {
                 window.location.href = url;
             } else {
-                // Fallback to client-side redirect if URL is missing (though it shouldn't be)
-                const stripe = await stripePromise;
-                if (!stripe) throw new Error('Stripe não carregou.');
-                const { error } = await stripe.redirectToCheckout({ sessionId });
-                if (error) throw error;
+                throw new Error('URL de pagamento não encontrada.');
             }
         } catch (error: any) {
             console.error('Payment Error:', error);
@@ -77,24 +73,34 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
                 {/* Left Column: Value Proposition */}
                 <div className="space-y-8">
                     <h1 className="text-5xl md:text-6xl font-serif">
-                        Sua jornada <br />
-                        <span className="text-red-600">continua aqui.</span>
+                        {user.role === 'fornecedor' ? (
+                            <>Potencialize <br /><span className="text-emerald-500">seu negócio.</span></>
+                        ) : (
+                            <>Sua jornada <br /><span className="text-red-600">continua aqui.</span></>
+                        )}
                     </h1>
                     <p className="text-zinc-400 text-lg">
-                        O período de testes acabou, mas o planejamento do seu sonho não pode parar.
-                        Garanta acesso ilimitado a todas as ferramentas do Noivaflix.
+                        {user.role === 'fornecedor'
+                            ? "Chega de perder oportunidades. Tenha destaque total e feche mais contratos com noivas qualificadas."
+                            : "O período de testes acabou, mas o planejamento do seu sonho não pode parar. Garanta acesso ilimitado a todas as ferramentas do Noivaflix."}
                     </p>
 
                     <div className="space-y-4">
-                        {[
+                        {(user.role === 'fornecedor' ? [
+                            "Receba Leads Ilimitados",
+                            "Perfil com Selo de Verificado",
+                            "Destaque nas Buscas",
+                            "Estatísticas de Acesso",
+                            "Link para WhatsApp Direto"
+                        ] : [
                             "Checklist Inteligente Completo",
                             "Gestão de Orçamento Ilimitada",
                             "Site dos Noivos Personalizável",
                             "Chat com a Madrinha IA 24h",
                             "Clube de Descontos Exclusivos"
-                        ].map((feature, i) => (
+                        ]).map((feature, i) => (
                             <div key={i} className="flex items-center gap-3 text-zinc-300">
-                                <CheckCircle2 className="text-emerald-500" size={20} />
+                                <CheckCircle2 className={user.role === 'fornecedor' ? "text-emerald-500" : "text-emerald-500"} size={20} />
                                 <span>{feature}</span>
                             </div>
                         ))}
@@ -120,7 +126,7 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
 
                             <button
                                 onClick={handleStartCheckout}
-                                className="w-full py-6 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-[0.2em] shadow-2xl shadow-red-600/30 transition-all flex justify-center items-center gap-3 border border-red-500/20"
+                                className={`w-full py-6 rounded-2xl ${user.role === 'fornecedor' ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30 border-emerald-500/20' : 'bg-red-600 hover:bg-red-700 shadow-red-600/30 border-red-500/20'} text-white font-black uppercase tracking-[0.2em] shadow-2xl transition-all flex justify-center items-center gap-3 border`}
                             >
                                 Contratar Agora
                             </button>
@@ -173,11 +179,17 @@ export const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ user, onSubs
                     </p>
 
                     <div className="mt-8 pt-8 border-t border-white/5 text-center">
-                        <p className="text-zinc-500 text-sm">"O melhor investimento do meu casamento!"</p>
+                        <p className="text-zinc-500 text-sm">
+                            {user.role === 'fornecedor'
+                                ? "\"Desde que assinei, minha agenda lotou de pedidos!\""
+                                : "\"O melhor investimento do meu casamento!\""}
+                        </p>
                         <div className="flex justify-center gap-1 mt-2">
                             {[1, 2, 3, 4, 5].map(s => <Star key={s} size={12} className="text-amber-500" fill="currentColor" />)}
                         </div>
-                        <p className="text-zinc-600 text-xs mt-1">Julia M., Noivaflix desde 2024</p>
+                        <p className="text-zinc-600 text-xs mt-1">
+                            {user.role === 'fornecedor' ? "André S., Fotógrafo Parceiro" : "Julia M., Noivaflix desde 2024"}
+                        </p>
                     </div>
 
                     {showBack && (

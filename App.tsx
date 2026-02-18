@@ -232,6 +232,7 @@ const App: React.FC = () => {
 
   // New Save/Load logic for Wedding Site
   const fetchWeddingSite = async (userId: string) => {
+    console.log('🔍 Fetching wedding site for user:', userId);
     setLoadingSite(true);
     try {
       const { data, error } = await supabase
@@ -239,6 +240,8 @@ const App: React.FC = () => {
         .select('*')
         .eq('user_id', userId)
         .single();
+
+      console.log('📥 Fetch Result:', { data, error });
 
       if (data) {
         setSiteData({
@@ -276,7 +279,11 @@ const App: React.FC = () => {
   };
 
   const saveWeddingSite = async () => {
-    if (!user) return;
+    console.log('💾 Attempting to save site...', { user });
+    if (!user) {
+      console.error('❌ User is null, cannot save site.');
+      return;
+    }
     setLoadingSite(true);
     try {
       const payload = {
@@ -294,8 +301,11 @@ const App: React.FC = () => {
         story: siteData.story,
         hero_image: siteData.heroImage,
         album: siteData.album,
-        rsvp_enabled: siteData.rsvpEnabled
+        rsvp_enabled: siteData.rsvpEnabled,
+        updated_at: new Date().toISOString()
       };
+
+      console.log('📦 Payload:', payload);
 
       const { data, error } = await supabase
         .from('wedding_sites')
@@ -303,14 +313,19 @@ const App: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase Save Error:', error);
+        alert('❌ Erro no Banco de Dados:\n' + JSON.stringify(error, null, 2));
+        throw error;
+      }
 
+      console.log('✅ Site saved successfully:', data);
       setIsSlugSaved(true);
-      alert('✅ Site salvo com sucesso!');
+      alert(`✅ Site salvo!\nNoivos: ${data.bride_name} & ${data.groom_name}\nAtualizado: ${new Date(data.updated_at).toLocaleTimeString()}`);
       if (data) fetchRSVPs(data.id);
     } catch (err: any) {
-      console.error('Error saving site:', err);
-      alert('Erro ao salvar site: ' + err.message);
+      console.error('🔥 Exception saving site:', err);
+      alert('❌ Erro ao salvar: ' + (err.message || JSON.stringify(err)));
     } finally {
       setLoadingSite(false);
     }
@@ -595,8 +610,13 @@ const App: React.FC = () => {
         phone: data.phone
       });
       setIsLoggedIn(true);
+      console.log('🔍 Checking Role:', data.role);
       if (data.role === 'admin') {
+        console.log('👉 Setting view to ADMIN_PANEL');
         setCurrentView(AppView.ADMIN_PANEL);
+      } else if (data.role === 'noiva') {
+        console.log('👉 Role is noiva, calling fetchWeddingSite with ID:', data.id);
+        fetchWeddingSite(data.id);
       } else if (data.role === 'fornecedor') {
         setCurrentView(AppView.SUPPLIER_DASHBOARD);
         setMySupplierProfile({
@@ -1151,13 +1171,14 @@ const App: React.FC = () => {
           )}
         </nav>
 
-        {user?.role === 'noiva' && user?.subscriptionStatus !== 'active' && (
+
+        {(user?.role === 'noiva' || user?.role === 'fornecedor') && user?.subscriptionStatus !== 'active' && (
           <button
             onClick={() => setShowCheckout(true)}
             className="w-full bg-red-600 hover:bg-red-700 text-white p-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-red-600/20 transition-all flex items-center justify-center gap-2 group mb-2"
           >
             <Zap size={14} className="fill-current group-hover:scale-125 transition-transform" />
-            Assinar Agora
+            Assinar Premium
           </button>
         )}
         <div className="p-4 bg-zinc-900/50 rounded-2xl border border-white/5 flex items-center gap-3">
@@ -1410,7 +1431,10 @@ const App: React.FC = () => {
                   Visualizar
                 </button>
                 <button
-                  onClick={saveWeddingSite}
+                  onClick={() => {
+                    console.log('🖱️ Save button clicked!');
+                    saveWeddingSite();
+                  }}
                   disabled={loadingSite}
                   className="bg-red-600 px-6 py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center gap-2 shadow-xl disabled:opacity-50"
                 >
@@ -1435,7 +1459,7 @@ const App: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1 flex justify-between items-center">
-                          <span>Link do Site ({window.location.host}/meusite/)</span>
+                          <span>Link do Site (noivaflix.vercel.app/meusite/)</span>
                           {!isSlugSaved && <span className="text-amber-500 lowercase font-normal italic">* Salve para atualizar o link</span>}
                         </label>
                         <div className="flex gap-2">
@@ -1449,7 +1473,7 @@ const App: React.FC = () => {
                           />
                           <button
                             onClick={() => {
-                              const url = `${window.location.origin}/meusite/${siteData.slug}`;
+                              const url = `https://noivaflix.vercel.app/meusite/${siteData.slug}`;
                               navigator.clipboard.writeText(url);
                               alert(`✅ Link copiado!\n${url}`);
                             }}
@@ -2174,6 +2198,32 @@ const App: React.FC = () => {
         {user?.role === 'fornecedor' && <button onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.SUPPLIER_DASHBOARD ? 'text-emerald-500 scale-125' : 'text-zinc-600'}`}><UserIcon /></button>}
         {user?.role === 'admin' && <button onClick={() => setCurrentView(AppView.ADMIN_PANEL)} className={`p-3 transition-all ${currentView === AppView.ADMIN_PANEL ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Database /></button>}
       </nav>
+
+      {/* Visual Debugger Overlay */}
+      {isLoggedIn && (
+        <div className="fixed bottom-24 right-4 z-[99999] bg-black/90 border border-red-500/50 p-4 rounded-xl max-w-sm text-[10px] font-mono shadow-2xl overflow-y-auto max-h-[50vh]">
+          <h4 className="text-red-500 font-bold mb-2 uppercase border-b border-red-500/20 pb-1">Debug Info (Suporte)</h4>
+          <div className="space-y-1 text-zinc-400">
+            <p><span className="text-zinc-500">User ID:</span> <span className="text-white select-all">{user?.id}</span></p>
+            <p><span className="text-zinc-500">Role:</span> <span className="text-white">{user?.role}</span></p>
+            <p><span className="text-zinc-500">Slug:</span> <span className="text-white">{siteData.slug}</span></p>
+            <p><span className="text-zinc-500">Bride:</span> <span className="text-white">{siteData.brideName}</span></p>
+            <p><span className="text-zinc-500">Last Upd:</span> <span className="text-white">{siteData.date ? new Date().toLocaleTimeString() : '-'}</span></p>
+          </div>
+          <div className="flex gap-2 mt-4 pt-2 border-t border-white/10">
+            <button onClick={() => {
+              if (user) fetchWeddingSite(user.id).then(() => alert('Manual fetch done'));
+            }} className="bg-blue-900/50 text-blue-200 px-3 py-1 rounded hover:bg-blue-900">
+              Force Fetch
+            </button>
+            <button onClick={() => {
+              saveWeddingSite();
+            }} className="bg-red-900/50 text-red-200 px-3 py-1 rounded hover:bg-red-900">
+              Force Save
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }.font-serif { font-family: 'Playfair Display', serif; }`}</style>
     </div >
