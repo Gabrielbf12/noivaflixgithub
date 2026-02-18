@@ -321,11 +321,11 @@ const App: React.FC = () => {
 
       console.log('✅ Site saved successfully:', data);
       setIsSlugSaved(true);
-      alert(`✅ Site salvo!\nNoivos: ${data.bride_name} & ${data.groom_name}\nAtualizado: ${new Date(data.updated_at).toLocaleTimeString()}`);
+      alert('✅ Site salvo com sucesso!');
       if (data) fetchRSVPs(data.id);
     } catch (err: any) {
       console.error('🔥 Exception saving site:', err);
-      alert('❌ Erro ao salvar: ' + (err.message || JSON.stringify(err)));
+      alert('Erro ao salvar site: ' + (err.message || 'Erro desconhecido'));
     } finally {
       setLoadingSite(false);
     }
@@ -2198,34 +2198,6 @@ const App: React.FC = () => {
         {user?.role === 'fornecedor' && <button onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.SUPPLIER_DASHBOARD ? 'text-emerald-500 scale-125' : 'text-zinc-600'}`}><UserIcon /></button>}
         {user?.role === 'admin' && <button onClick={() => setCurrentView(AppView.ADMIN_PANEL)} className={`p-3 transition-all ${currentView === AppView.ADMIN_PANEL ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Database /></button>}
       </nav>
-
-      {/* Visual Debugger Overlay */}
-      {isLoggedIn && (
-        <div className="fixed bottom-24 right-4 z-[99999] bg-black/90 border border-red-500/50 p-4 rounded-xl max-w-sm text-[10px] font-mono shadow-2xl overflow-y-auto max-h-[50vh]">
-          <h4 className="text-red-500 font-bold mb-2 uppercase border-b border-red-500/20 pb-1">Debug Info (Suporte)</h4>
-          <div className="space-y-1 text-zinc-400">
-            <p><span className="text-zinc-500">User ID:</span> <span className="text-white select-all">{user?.id}</span></p>
-            <p><span className="text-zinc-500">Role:</span> <span className="text-white">{user?.role}</span></p>
-            <p><span className="text-zinc-500">Slug:</span> <span className="text-white">{siteData.slug}</span></p>
-            <p><span className="text-zinc-500">Bride:</span> <span className="text-white">{siteData.brideName}</span></p>
-            <p><span className="text-zinc-500">Last Upd:</span> <span className="text-white">{siteData.date ? new Date().toLocaleTimeString() : '-'}</span></p>
-          </div>
-          <div className="flex gap-2 mt-4 pt-2 border-t border-white/10">
-            <button onClick={() => {
-              if (user) fetchWeddingSite(user.id).then(() => alert('Manual fetch done'));
-            }} className="bg-blue-900/50 text-blue-200 px-3 py-1 rounded hover:bg-blue-900">
-              Force Fetch
-            </button>
-            <button onClick={() => {
-              saveWeddingSite();
-            }} className="bg-red-900/50 text-red-200 px-3 py-1 rounded hover:bg-red-900">
-              Force Save
-            </button>
-          </div>
-        </div>
-      )}
-
-      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }.font-serif { font-family: 'Playfair Display', serif; }`}</style>
     </div >
   );
 };
