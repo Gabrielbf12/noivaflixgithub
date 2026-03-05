@@ -1078,11 +1078,11 @@ const App: React.FC = () => {
           }} className="space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu Nome Completo</label>
-              <input name="name" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="Ex: Maria Souza" />
+              <input name="name" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm text-white outline-none focus:border-red-600" placeholder="Ex: Maria Souza" />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase text-zinc-600 ml-1">Seu WhatsApp</label>
-              <input name="phone" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm" placeholder="(11) 99999-9999" />
+              <input name="phone" required className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-sm text-white outline-none focus:border-red-600" placeholder="(11) 99999-9999" />
             </div>
             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-center">
               <p className="text-emerald-500 font-bold mb-1">Deseja confirmar sua presença?</p>
