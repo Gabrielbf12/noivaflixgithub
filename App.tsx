@@ -929,7 +929,7 @@ const App: React.FC = () => {
   const daysRemaining = useMemo(() => {
     if (!user?.weddingDate) return null;
     const today = new Date();
-    const wedding = new Date(user.weddingDate);
+    const wedding = new Date(user.weddingDate + 'T12:00:00');
     const diffTime = wedding.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -1010,7 +1010,7 @@ const App: React.FC = () => {
             <h1 className="text-7xl md:text-9xl font-serif">{siteData.brideName} & {siteData.groomName}</h1>
             <p className="text-xl md:text-2xl uppercase tracking-[0.3em] font-light">{siteData.headline}</p>
             <div className="space-y-2">
-              <p className="text-lg md:text-xl font-bold">{new Date(siteData.date).toLocaleDateString('pt-BR')} às {siteData.time}</p>
+              <p className="text-lg md:text-xl font-bold">{siteData.date ? siteData.date.split('-').reverse().join('/') : ''} às {siteData.time}</p>
               <p className="opacity-70">{siteData.locationName}</p>
             </div>
             <div className="flex flex-col md:flex-row gap-4 justify-center">
@@ -1151,6 +1151,7 @@ const App: React.FC = () => {
               <NavItem icon={<Wallet size={20} />} label="Orçamento" active={currentView === AppView.BUDGET} onClick={() => setCurrentView(AppView.BUDGET)} />
               <NavItem icon={<Store size={20} />} label="Fornecedores" active={currentView === AppView.VENDORS} onClick={() => setCurrentView(AppView.VENDORS)} />
               <NavItem icon={<Globe size={20} />} label="Meu Site" active={currentView === AppView.SITE_BUILDER} onClick={() => setCurrentView(AppView.SITE_BUILDER)} />
+              <NavItem icon={<Trophy size={20} />} label="Quiz do Casal" active={false} onClick={() => window.open('/game/quiz-casal/index.html', '_blank')} />
             </>
           )}
           {user?.role === 'fornecedor' && (
@@ -1259,7 +1260,7 @@ const App: React.FC = () => {
                 <div className="p-4 bg-red-600/10 text-red-500 w-fit rounded-2xl mb-6"><Calendar size={28} /></div>
                 <p className="text-zinc-500 text-[10px] uppercase font-black tracking-widest">Data do Grande Dia</p>
                 <h3 className="text-4xl font-black mt-2 text-white">
-                  {user?.weddingDate ? new Date(user.weddingDate).toLocaleDateString('pt-BR') : 'TBD'}
+                  {user?.weddingDate ? user.weddingDate.split('-').reverse().join('/') : 'TBD'}
                 </h3>
               </div>
 
@@ -1607,7 +1608,7 @@ const App: React.FC = () => {
                     <div className={`w-full h-full overflow-y-auto no-scrollbar ${themeStyles[siteData.theme].bg} ${themeStyles[siteData.theme].text} ${themeStyles[siteData.theme].font} p-6 text-center space-y-6`}>
                       <img src={siteData.heroImage} className="h-40 w-full object-cover rounded-2xl mb-4" />
                       <h4 className="text-2xl font-serif">{siteData.brideName} & {siteData.groomName}</h4>
-                      <p className="text-[10px] opacity-60 uppercase">{siteData.date} • {siteData.time}</p>
+                      <p className="text-[10px] opacity-60 uppercase">{siteData.date ? siteData.date.split('-').reverse().join('/') : ''} • {siteData.time?.slice(0, 5)}</p>
                       <div className="h-px bg-zinc-200 w-12 mx-auto"></div>
                       <p className="text-[10px] font-bold">{siteData.locationName}</p>
                       {siteData.locationUrl && (
@@ -2195,6 +2196,7 @@ const App: React.FC = () => {
         <button onClick={() => setCurrentView(AppView.STREAMING)} className={`p-3 transition-all ${currentView === AppView.STREAMING ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><VideoIcon /></button>
         <button onClick={() => setCurrentView(AppView.VENDORS)} className={`p-3 transition-all ${currentView === AppView.VENDORS ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Store /></button>
         {user?.role === 'noiva' && <button onClick={() => setCurrentView(AppView.SITE_BUILDER)} className={`p-3 transition-all ${currentView === AppView.SITE_BUILDER ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Globe /></button>}
+        {user?.role === 'noiva' && <button onClick={() => window.open('/game/quiz-casal/index.html', '_blank')} className={`p-3 transition-all text-zinc-600 hover:text-red-500`}><Trophy /></button>}
         {user?.role === 'fornecedor' && <button onClick={() => setCurrentView(AppView.SUPPLIER_DASHBOARD)} className={`p-3 transition-all ${currentView === AppView.SUPPLIER_DASHBOARD ? 'text-emerald-500 scale-125' : 'text-zinc-600'}`}><UserIcon /></button>}
         {user?.role === 'admin' && <button onClick={() => setCurrentView(AppView.ADMIN_PANEL)} className={`p-3 transition-all ${currentView === AppView.ADMIN_PANEL ? 'text-red-500 scale-125' : 'text-zinc-600'}`}><Database /></button>}
       </nav>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quiz do Casal | Noivaflix</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app-container">
+
+        <!-- Tela Inicial (Criação) -->
+        <div id="creator-intro-screen" class="screen active">
+            <div class="card">
+                <span class="emoji-hero">👰</span>
+                <h1>Quiz do Casal</h1>
+                <p>Crie o seu quiz e envie para o seu noivo. Vamos ver o quanto ele realmente te conhece!</p>
+                <button id="start-creator-btn">Começar a Montar</button>
+            </div>
+        </div>
+
+        <!-- Tela Inicial (Desafiante / Noivo) -->
+        <div id="challenger-intro-screen" class="screen hidden">
+            <div class="card">
+                <span class="emoji-hero">🤵</span>
+                <h1>Desafio Aceito?</h1>
+                <p>Sua noiva enviou um teste de conhecimentos. Mostre que você presta atenção aos detalhes!</p>
+                <button id="start-challenger-btn">Aceitar Desafio</button>
+            </div>
+        </div>
+
+        <!-- Tela de Perguntas (Usada para ambos os modos) -->
+        <div id="question-screen" class="screen hidden">
+            <div class="quiz-header">
+                <span class="badge" id="mode-badge">Criando Quiz</span>
+                <span class="progress" id="progress-text">1/10</span>
+            </div>
+
+            <div class="card quiz-card">
+                <h2 id="question-text">Pergunta aqui</h2>
+
+                <div id="options-container" class="options-grid">
+                    <!-- Botões gerados via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tela Final (Criação Concluída) -->
+        <div id="creator-result-screen" class="screen hidden">
+            <div class="card">
+                <span class="emoji-hero">💌</span>
+                <h1>Quiz Pronto!</h1>
+                <p>Suas respostas foram salvas na estrela cadente (e neste link mágico). Copie o link abaixo e mande
+                    para ele no WhatsApp!</p>
+
+                <div class="link-box">
+                    <input type="text" id="share-link-input" readonly>
+                    <button id="copy-btn">Copiar Link</button>
+                </div>
+
+                <a href="/" class="back-link">Voltar ao Noivaflix</a>
+            </div>
+        </div>
+
+        <!-- Tela Final (Desafiante Concluído) -->
+        <div id="challenger-result-screen" class="screen hidden">
+            <div class="card">
+                <span class="emoji-hero" id="result-emoji">🏆</span>
+                <h1 id="result-title">Placar Final</h1>
+                <div class="score-circle">
+                    <span id="final-score">0</span><span class="total-score">/10</span>
+                </div>
+                <p id="result-message" class="result-msg">Mensagem de resultado aqui</p>
+
+                <button id="play-own-btn">Criar Meu Próprio Quiz</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts do Jogo -->
+    <script src="game.js"></script>
+</body>
+
+</html>
