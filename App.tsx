@@ -16,6 +16,7 @@ import { MOCK_VIDEOS, MOCK_TASKS, MOCK_GUESTS, MOCK_VENDORS, MOCK_BUDGET } from 
 import { getAIResponse } from './geminiService';
 import { SubscriptionPage } from './components/SubscriptionPage';
 import { ImageCropper } from './components/ImageCropper';
+import { QRCodeCanvas } from 'qrcode.react';
 
 const PREMIUM_PRICE_NOIVA = 47; // Exemplo de valor mensal
 const PREMIUM_PRICE_FORNECEDOR = 97;
@@ -1482,6 +1483,13 @@ const App: React.FC = () => {
                           >
                             <Copy size={16} /> Copiar
                           </button>
+                          <button
+                            onClick={() => setActiveModal('qr_code' as any)}
+                            className="bg-zinc-800 hover:bg-zinc-700 px-6 rounded-2xl text-white transition-all flex items-center gap-2 text-xs font-bold"
+                            title="Gerar QR Code do Site"
+                          >
+                            <QrCode size={16} /> QR Code
+                          </button>
                         </div>
                       </div>
 
@@ -2122,6 +2130,40 @@ const App: React.FC = () => {
               }}
             />
           )}
+        </div>
+      </Modal>
+
+      <Modal isOpen={activeModal === ('qr_code' as any)} onClose={() => setActiveModal(null)} title="QR Code do Site">
+        <div className="flex flex-col items-center justify-center p-8 space-y-8 text-center">
+          <p className="text-zinc-400 text-sm">Baixe este QR Code e coloque no seu convite de casamento impresso para que seus convidados acessem o site escaneando pelo celular.</p>
+          <div className="bg-white p-6 rounded-3xl" id="qr-code-container">
+            <QRCodeCanvas
+              id="site-qr-code"
+              value={`https://noivaflix.vercel.app/meusite/${siteData.slug}`}
+              size={256}
+              level="H"
+              includeMargin={true}
+              fgColor="#000000"
+              bgColor="#ffffff"
+            />
+          </div>
+          <button
+            onClick={() => {
+              const canvas = document.getElementById('site-qr-code') as HTMLCanvasElement;
+              if (canvas) {
+                const pngUrl = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+                const downloadLink = document.createElement('a');
+                downloadLink.href = pngUrl;
+                downloadLink.download = `qrcode_${siteData.slug}.png`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+              }
+            }}
+            className="w-full max-w-sm py-4 bg-red-600 hover:bg-red-700 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-widest text-xs shadow-xl transition-all"
+          >
+            <Download size={18} /> Baixar Imagem PNG
+          </button>
         </div>
       </Modal>
 
