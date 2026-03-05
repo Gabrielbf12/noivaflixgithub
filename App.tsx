@@ -990,7 +990,7 @@ const App: React.FC = () => {
     const theme = themeStyles[siteData.theme];
     return (
       <div className={`min-h-screen ${theme.bg} ${theme.text} ${theme.font} animate-in fade-in duration-1000 overflow-x-hidden pb-20`}>
-        {isLoggedIn && !window.location.pathname.startsWith('/meusite/') && (
+        {(isLoggedIn && (!window.location.pathname.startsWith('/meusite/') || user?.role === 'admin')) && (
           <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200]">
             <button
               onClick={() => {
