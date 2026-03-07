@@ -24,7 +24,7 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ user, setUser })
     useEffect(() => {
         // Fetch budget from profile if available, otherwise default
         fetchExpenses();
-    }, [userId]);
+    }, [user.id]);
 
     const fetchExpenses = async () => {
         try {
