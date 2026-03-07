@@ -1407,7 +1407,7 @@ const App: React.FC = () => {
         </Modal>
 
         {currentView === AppView.BUDGET && user && (
-          <ExpensesScreen userId={user.id} />
+          <ExpensesScreen user={user} setUser={setUser} />
         )}
 
         {currentView === AppView.CHECKLIST && user && (

@@ -1,18 +1,25 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, DollarSign, CreditCard, PieChart, Briefcase, Trash2 } from 'lucide-react';
+import { Edit2, Plus, DollarSign, CreditCard, PieChart, Briefcase, Trash2 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { Expense } from '../types';
+import { Expense, User } from '../types';
 
 interface ExpensesScreenProps {
-    userId: string;
+    user: User;
+    setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
-export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ userId }) => {
+export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ user, setUser }) => {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeModal, setActiveModal] = useState(false);
-    const [totalBudgetGoal, setTotalBudgetGoal] = useState(50000); // Exemplo, poderia vir do perfil
+    const [activeModal, setActiveModal] = useState<'new_expense' | 'edit_budget' | null>(null);
+    const [totalBudgetGoal, setTotalBudgetGoal] = useState(user.budget || 50000); // Initialize from profile
+    const [newBudgetValue, setNewBudgetValue] = useState(totalBudgetGoal.toString());
+
+    useEffect(() => {
+        setTotalBudgetGoal(user.budget || 50000);
+        setNewBudgetValue((user.budget || 50000).toString());
+    }, [user.budget]);
 
     useEffect(() => {
         // Fetch budget from profile if available, otherwise default
@@ -25,7 +32,7 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ userId }) => {
             const { data, error } = await supabase
                 .from('expenses')
                 .select('*')
-                .eq('user_id', userId)
+                .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -42,7 +49,7 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ userId }) => {
         const formData = new FormData(e.currentTarget);
 
         const newExpense = {
-            user_id: userId,
+            user_id: user.id,
             supplier: formData.get('supplier') as string,
             category: formData.get('category') as string,
             value: parseFloat(formData.get('value') as string),
@@ -59,7 +66,7 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ userId }) => {
 
             if (error) throw error;
             setExpenses([data, ...expenses]);
-            setActiveModal(false);
+            setActiveModal(null);
         } catch (error) {
             console.error('Error adding expense:', error);
             alert('Erro ao salvar despesa');
@@ -85,11 +92,18 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ userId }) => {
         <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
             <header className="flex justify-between items-end">
                 <div className="space-y-2"><h2 className="text-5xl font-serif">Orçamento</h2><p className="text-zinc-500">Mantenha as finanças sob controle.</p></div>
-                <button onClick={() => setActiveModal(true)} className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center gap-2 hover:bg-zinc-200 transition-all shadow-xl"><Plus size={18} /> Novo Gasto</button>
+                <button onClick={() => setActiveModal('new_expense')} className="bg-white text-black px-8 py-4 rounded-2xl font-black uppercase text-xs tracking-widest flex items-center gap-2 hover:bg-zinc-200 transition-all shadow-xl"><Plus size={18} /> Novo Gasto</button>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="bg-zinc-900/50 p-10 rounded-[40px] border border-white/5 space-y-4">
+                <div className="bg-zinc-900/50 p-10 rounded-[40px] border border-white/5 space-y-4 group relative">
+                    <button
+                        onClick={() => setActiveModal('edit_budget')}
+                        className="absolute top-8 right-8 p-3 bg-red-600 rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg text-white"
+                        title="Editar Orçamento"
+                    >
+                        <Edit2 size={18} />
+                    </button>
                     <div className="p-4 bg-blue-600/10 text-blue-500 w-fit rounded-2xl"><DollarSign size={24} /></div>
                     <p className="text-zinc-500 text-[10px] uppercase font-black tracking-widest">Planejado</p>
                     <h3 className="text-4xl font-black">R$ {totalBudgetGoal.toLocaleString()}</h3>
@@ -138,13 +152,13 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ userId }) => {
                 </div>
             </div>
 
-            {activeModal && (
+            {activeModal === 'new_expense' && (
                 <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
-                    <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setActiveModal(false)}></div>
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setActiveModal(null)}></div>
                     <div className="bg-zinc-950 border border-white/10 w-full max-w-lg rounded-[32px] md:rounded-[40px] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
                         <header className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center">
                             <h3 className="text-xl font-bold text-white">Novo Gasto</h3>
-                            <button onClick={() => setActiveModal(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-500 hover:text-white"><Plus className="rotate-45" size={20} /></button>
+                            <button onClick={() => setActiveModal(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-500 hover:text-white"><Plus className="rotate-45" size={20} /></button>
                         </header>
                         <div className="p-6 md:p-8">
                             <form onSubmit={addExpense} className="space-y-6">
@@ -177,6 +191,57 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ userId }) => {
                                     </select>
                                 </div>
                                 <button type="submit" className="w-full bg-red-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-red-700 transition-all">Lançar Despesa</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeModal === 'edit_budget' && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" onClick={() => setActiveModal(null)}></div>
+                    <div className="bg-zinc-950 border border-white/10 w-full max-w-md rounded-[32px] md:rounded-[40px] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-300">
+                        <header className="p-6 md:p-8 border-b border-white/5 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-white">Ajustar Orçamento</h3>
+                            <button onClick={() => setActiveModal(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-500 hover:text-white"><Plus className="rotate-45" size={20} /></button>
+                        </header>
+                        <div className="p-6 md:p-8">
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+                                const parsedVal = parseFloat(newBudgetValue);
+                                if (isNaN(parsedVal)) return;
+
+                                try {
+                                    // Update database
+                                    const { error } = await supabase
+                                        .from('users')
+                                        .update({ budget: parsedVal })
+                                        .eq('id', user.id);
+
+                                    if (error) throw error;
+
+                                    // Update local state
+                                    setTotalBudgetGoal(parsedVal);
+                                    setUser(prev => prev ? { ...prev, budget: parsedVal } : null);
+                                    setActiveModal(null);
+                                } catch (error) {
+                                    console.error('Error updating budget:', error);
+                                    alert('Erro ao atualizar orçamento.');
+                                }
+                            }} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase text-zinc-600 ml-1">Novo Orçamento Total (R$)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={newBudgetValue}
+                                        onChange={(e) => setNewBudgetValue(e.target.value)}
+                                        required
+                                        className="w-full text-center text-4xl font-black bg-zinc-900 border border-white/5 rounded-2xl p-6 outline-none focus:border-red-600 text-white"
+                                    />
+                                    <p className="text-zinc-500 text-xs text-center pt-2">Esse limite recálcula todas as porcentagens do seu Dashboard.</p>
+                                </div>
+                                <button type="submit" className="w-full bg-red-600 text-white py-6 rounded-2xl font-black uppercase tracking-widest shadow-xl hover:bg-red-700 transition-all">Salvar Alteração</button>
                             </form>
                         </div>
                     </div>
