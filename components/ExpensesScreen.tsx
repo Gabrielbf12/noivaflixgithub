@@ -214,7 +214,7 @@ export const ExpensesScreen: React.FC<ExpensesScreenProps> = ({ user, setUser })
                                 try {
                                     // Update database
                                     const { error } = await supabase
-                                        .from('users')
+                                        .from('profiles')
                                         .update({ budget: parsedVal })
                                         .eq('id', user.id);
 
