@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { VideoUploadModal } from './VideoUploadModal';
 import {
     Users, Building2, Clock, TrendingUp, Check, X, Search, CheckCircle,
-    PieChart, ArrowUpRight, Video as VideoIcon, Plus, Trash2, LayoutDashboard
+    PieChart, ArrowUpRight, Video as VideoIcon, Plus, Trash2, LayoutDashboard,
+    Filter, Copy, Mail, Clock3, AlertCircle
 } from 'lucide-react';
 import { User, Vendor, Video } from '../types';
 
@@ -23,11 +24,18 @@ interface AdminPanelProps {
     onDeleteVideo: (id: string) => void;
     onApproveVerification?: (id: string) => void;
     onRejectVerification?: (id: string) => void;
+    onDeleteUser?: (id: string) => void;
     activeTab: 'overview' | 'brides' | 'vendors' | 'finances' | 'videos' | 'verifications';
 }
 
 const PREMIUM_PRICE_NOIVA = 47;
 const PREMIUM_PRICE_FORNECEDOR = 97;
+
+const statusLabel = (status: string) => {
+    if (status === 'active') return { label: 'Ativo', color: 'text-emerald-500', bg: 'bg-emerald-500/10', icon: <CheckCircle size={12} /> };
+    if (status === 'trialing') return { label: 'Período de Teste', color: 'text-amber-400', bg: 'bg-amber-400/10', icon: <Clock3 size={12} /> };
+    return { label: 'Inativo', color: 'text-red-400', bg: 'bg-red-400/10', icon: <AlertCircle size={12} /> };
+};
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({
     user,
@@ -41,9 +49,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     onDeleteVideo,
     onApproveVerification,
     onRejectVerification,
+    onDeleteUser,
     activeTab
 }) => {
     const [isAddVideoModalOpen, setIsAddVideoModalOpen] = useState(false);
+    const [brideSearch, setBrideSearch] = useState('');
+    const [brideFilterPlan, setBrideFilterPlan] = useState('');
+    const [brideFilterStatus, setBrideFilterStatus] = useState('');
+
+    const filteredBrides = useMemo(() => {
+        return allUsers
+            .filter(u => u.role === 'noiva')
+            .filter(u => {
+                const q = brideSearch.toLowerCase();
+                const matchSearch = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+                const matchPlan = !brideFilterPlan || u.plan === brideFilterPlan;
+                const matchStatus = !brideFilterStatus || (u.accountStatus || 'active') === brideFilterStatus;
+                return matchSearch && matchPlan && matchStatus;
+            });
+    }, [allUsers, brideSearch, brideFilterPlan, brideFilterStatus]);
 
     return (
         <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20">
@@ -104,45 +128,135 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             )}
 
             {activeTab === 'brides' && (
-                <div className="bg-zinc-900/20 p-6 md:p-10 rounded-[40px] border border-white/5 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-                    <div className="overflow-x-auto no-scrollbar">
-                        <table className="w-full text-left">
-                            <thead className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                                <tr>
-                                    <th className="pb-6 pl-4">Noiva</th>
-                                    <th className="pb-6">E-mail</th>
-                                    <th className="pb-6">Data Casamento</th>
-                                    <th className="pb-6">Plano</th>
-                                    <th className="pb-6">Status</th>
-                                    <th className="pb-6 text-right pr-4">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {allUsers.filter(u => u.role === 'noiva').map(bride => (
-                                    <tr key={bride.id} className="group hover:bg-white/[0.02] transition-all">
-                                        <td className="py-6 pl-4">
-                                            <div className="flex items-center gap-4">
-                                                <img src={bride.avatar} className="w-10 h-10 rounded-full" />
-                                                <span className="font-bold text-white">{bride.name}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-6 text-sm text-zinc-400">{bride.email}</td>
-                                        <td className="py-6 text-sm text-zinc-400">{bride.weddingDate || 'Não informada'}</td>
-                                        <td className="py-6">
-                                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${bride.plan === 'Premium' ? 'bg-red-600/20 text-red-500' : 'bg-zinc-800 text-zinc-400'}`}>
-                                                {bride.plan}
-                                            </span>
-                                        </td>
-                                        <td className="py-6">
-                                            <span className="flex items-center gap-2 text-xs text-emerald-500 font-bold"><CheckCircle size={14} /> Ativo</span>
-                                        </td>
-                                        <td className="py-6 text-right pr-4">
-                                            <button className="p-2 text-zinc-600 hover:text-white transition-colors"><Search size={16} /></button>
-                                        </td>
+                <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                    {/* Filters Bar */}
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="relative flex-1">
+                            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nome ou e-mail..."
+                                value={brideSearch}
+                                onChange={e => setBrideSearch(e.target.value)}
+                                className="w-full bg-zinc-900 border border-white/5 rounded-2xl pl-10 pr-4 py-4 text-sm outline-none focus:border-red-600 text-white placeholder:text-zinc-600"
+                            />
+                        </div>
+                        <select
+                            value={brideFilterPlan}
+                            onChange={e => setBrideFilterPlan(e.target.value)}
+                            className="bg-zinc-900 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-red-600 text-white min-w-[160px]"
+                        >
+                            <option value="">Todos os Planos</option>
+                            <option value="Premium">Premium</option>
+                            <option value="Básico">Básico</option>
+                        </select>
+                        <select
+                            value={brideFilterStatus}
+                            onChange={e => setBrideFilterStatus(e.target.value)}
+                            className="bg-zinc-900 border border-white/5 rounded-2xl px-5 py-4 text-sm outline-none focus:border-red-600 text-white min-w-[200px]"
+                        >
+                            <option value="">Todos os Status</option>
+                            <option value="active">Ativo</option>
+                            <option value="trialing">Período de Teste</option>
+                            <option value="inactive">Inativo</option>
+                        </select>
+                    </div>
+
+                    {/* Counter */}
+                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">
+                        {filteredBrides.length} noiva{filteredBrides.length !== 1 ? 's' : ''} encontrada{filteredBrides.length !== 1 ? 's' : ''}
+                    </p>
+
+                    {/* Table */}
+                    <div className="bg-zinc-900/20 rounded-[32px] border border-white/5 overflow-hidden">
+                        <div className="overflow-x-auto no-scrollbar">
+                            <table className="w-full text-left">
+                                <thead className="text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-white/5">
+                                    <tr>
+                                        <th className="py-5 pl-6">Noiva</th>
+                                        <th className="py-5">E-mail</th>
+                                        <th className="py-5">Data Casamento</th>
+                                        <th className="py-5">Plano</th>
+                                        <th className="py-5">Status</th>
+                                        <th className="py-5 text-right pr-6">Ações</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-white/[0.03]">
+                                    {filteredBrides.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="py-16 text-center text-zinc-600 text-sm italic">
+                                                Nenhuma noiva encontrada com os filtros selecionados.
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {filteredBrides.map(bride => {
+                                        const st = statusLabel(bride.accountStatus || 'active');
+                                        return (
+                                            <tr key={bride.id} className="group hover:bg-white/[0.02] transition-all">
+                                                <td className="py-5 pl-6">
+                                                    <div className="flex items-center gap-4">
+                                                        <img
+                                                            src={bride.avatar || `https://i.pravatar.cc/150?u=${bride.id}`}
+                                                            className="w-10 h-10 rounded-full object-cover ring-2 ring-white/5"
+                                                            onError={(e: any) => { e.target.src = `https://i.pravatar.cc/150?u=${bride.id}`; }}
+                                                        />
+                                                        <div>
+                                                            <p className="font-bold text-white text-sm">{bride.name}</p>
+                                                            <p className="text-[10px] text-zinc-500">Desde {bride.dateRegistered || '—'}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm text-zinc-400">{bride.email}</span>
+                                                        <button
+                                                            onClick={() => { navigator.clipboard.writeText(bride.email); }}
+                                                            className="opacity-0 group-hover:opacity-100 p-1 text-zinc-600 hover:text-white transition-all"
+                                                            title="Copiar e-mail"
+                                                        >
+                                                            <Copy size={12} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td className="py-5 text-sm text-zinc-400">{bride.weddingDate || 'Não informada'}</td>
+                                                <td className="py-5">
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg ${bride.plan === 'Premium' ? 'bg-red-600/20 text-red-400' : 'bg-zinc-800 text-zinc-400'}`}>
+                                                        {bride.plan || 'Básico'}
+                                                    </span>
+                                                </td>
+                                                <td className="py-5">
+                                                    <span className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg w-fit ${st.bg} ${st.color}`}>
+                                                        {st.icon} {st.label}
+                                                    </span>
+                                                </td>
+                                                <td className="py-5 pr-6">
+                                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                        <a
+                                                            href={`mailto:${bride.email}`}
+                                                            className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all"
+                                                            title="Enviar e-mail"
+                                                        >
+                                                            <Mail size={16} />
+                                                        </a>
+                                                        <button
+                                                            onClick={() => {
+                                                                if (window.confirm(`Tem certeza que deseja excluir a conta de "${bride.name}"?\n\nEssa ação é irreversível.`)) {
+                                                                    onDeleteUser?.(bride.id);
+                                                                }
+                                                            }}
+                                                            className="p-2 rounded-xl text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-all"
+                                                            title="Excluir conta"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             )}

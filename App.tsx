@@ -1403,6 +1403,7 @@ const App: React.FC = () => {
         )}
 
         {currentView === AppView.ADMIN_PANEL && (
+
           <AdminPanel
             user={user}
             adminStats={adminStats}
@@ -1415,9 +1416,20 @@ const App: React.FC = () => {
             onDeleteVideo={handleDeleteVideo}
             onApproveVerification={handleApproveVerification}
             onRejectVerification={handleRejectVerification}
+            onDeleteUser={async (userId: string) => {
+              try {
+                const { error } = await supabase.rpc('delete_user_account', { target_user_id: userId });
+                if (error) throw error;
+                setAllUsers(prev => prev.filter(u => u.id !== userId));
+                alert('✅ Conta excluída com sucesso.');
+              } catch (err: any) {
+                alert('Erro ao excluir conta: ' + (err.message || 'Tente novamente.'));
+              }
+            }}
             activeTab={adminTab as any}
           />
         )}
+
 
         <Modal isOpen={activeModal === ('add_video' as any)} onClose={() => setActiveModal(null)} title="Adicionar Novo Vídeo">
           <form onSubmit={handleAddVideo} className="space-y-6">
