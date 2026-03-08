@@ -2277,6 +2277,40 @@ const App: React.FC = () => {
           <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
             <header className="space-y-8">
               <h2 className="text-5xl font-serif">Time dos Sonhos</h2>
+
+              {/* Smart Profile Banner */}
+              {user?.role === 'noiva' && (
+                user?.budget || user?.weddingStyle || user?.city ? (
+                  <div className="bg-gradient-to-r from-red-600/10 via-pink-600/5 to-transparent border border-red-500/20 rounded-3xl p-5 flex flex-wrap items-center gap-4">
+                    <div className="w-10 h-10 bg-red-600/20 rounded-xl flex items-center justify-center text-lg flex-shrink-0">💍</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black uppercase tracking-widest text-red-400 mb-1">Seu Perfil de Casamento está ativo</p>
+                      <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
+                        {user.city && <span>📍 {user.city}</span>}
+                        {user.budget && <span>💰 R$ {Number(user.budget).toLocaleString('pt-BR')}</span>}
+                        {user.weddingDate && <span>📅 {new Date(user.weddingDate + 'T00:00:00').toLocaleDateString('pt-BR')}</span>}
+                        {user.weddingStyle && <span>✨ {user.weddingStyle.charAt(0).toUpperCase() + user.weddingStyle.slice(1)}</span>}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 text-right">Compatibilidade ativa ✓</p>
+                  </div>
+                ) : (
+                  <div className="bg-zinc-900/60 border border-white/5 rounded-3xl p-5 flex flex-wrap items-center gap-4">
+                    <div className="w-10 h-10 bg-zinc-800 rounded-xl flex items-center justify-center text-lg flex-shrink-0">🎯</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-white">Personalize suas recomendações</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Preencha o Perfil do Casamento para ver quais fornecedores são compatíveis com seu orçamento e estilo.</p>
+                    </div>
+                    <button
+                      onClick={() => setCurrentView(AppView.WEDDING_PROFILE)}
+                      className="bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest px-5 py-3 rounded-xl transition-all flex-shrink-0"
+                    >
+                      Preencher Perfil
+                    </button>
+                  </div>
+                )
+              )}
+
               <div className="bg-zinc-900/50 p-8 rounded-[40px] border border-white/5 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="relative">
@@ -2395,6 +2429,30 @@ const App: React.FC = () => {
                           <MapPin size={12} /> {vendor.location}, {vendor.state}
                         </span>
                       </div>
+                      {/* Compatibility badges — only shown for logged-in brides with profile */}
+                      {user?.role === 'noiva' && (user?.weddingStyle || user?.city || user?.budget) && (() => {
+                        const badges: { label: string; color: string; bg: string }[] = [];
+                        if (user.city && vendor.location && vendor.location.toLowerCase().includes(user.city.toLowerCase())) {
+                          badges.push({ label: '📍 Sua cidade', color: 'text-blue-400', bg: 'bg-blue-400/10' });
+                        }
+                        if (user.vendorTicket && vendor.initialInvestment) {
+                          const vendorMin = parseFloat(vendor.initialInvestment.replace(/[^0-9,]/g, '').replace(',', '.'));
+                          if (!isNaN(vendorMin) && user.vendorTicket >= vendorMin) {
+                            badges.push({ label: '💰 No seu budget', color: 'text-emerald-400', bg: 'bg-emerald-400/10' });
+                          }
+                        }
+                        if (user.weddingDate) {
+                          badges.push({ label: '📅 Disponível', color: 'text-purple-400', bg: 'bg-purple-400/10' });
+                        }
+                        if (badges.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-1.5 pt-2">
+                            {badges.map((b, i) => (
+                              <span key={i} className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${b.bg} ${b.color}`}>{b.label}</span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
@@ -2451,6 +2509,42 @@ const App: React.FC = () => {
               </div>
             )}
 
+            {/* Compatibility panel — only for brides with wedding profile */}
+            {user?.role === 'noiva' && (user?.weddingStyle || user?.city || user?.budget || user?.weddingDate) && (() => {
+              const items: { icon: string; label: string; value: string; match: boolean }[] = [];
+              if (user.city) items.push({ icon: '📍', label: 'Cidade', value: user.city, match: !!(selectedVendor?.location && selectedVendor.location.toLowerCase().includes(user.city.toLowerCase())) });
+              if (user.vendorTicket && selectedVendor?.initialInvestment) {
+                const vendorMin = parseFloat(selectedVendor.initialInvestment.replace(/[^0-9,]/g, '').replace(',', '.'));
+                if (!isNaN(vendorMin)) items.push({ icon: '💰', label: 'Budget', value: `R$ ${user.vendorTicket.toLocaleString('pt-BR')} por fornecedor`, match: user.vendorTicket >= vendorMin });
+              }
+              if (user.weddingDate) items.push({ icon: '📅', label: 'Data', value: new Date(user.weddingDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }), match: true });
+              if (user.weddingStyle) items.push({ icon: '✨', label: 'Estilo', value: user.weddingStyle.charAt(0).toUpperCase() + user.weddingStyle.slice(1), match: true });
+              if (items.length === 0) return null;
+              const score = Math.round((items.filter(i => i.match).length / items.length) * 100);
+              return (
+                <div className="bg-zinc-950 border border-white/5 rounded-3xl p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Compatibilidade com seu Perfil</h4>
+                    <span className={`text-sm font-black ${score >= 75 ? 'text-emerald-400' : score >= 50 ? 'text-amber-400' : 'text-zinc-500'}`}>{score}% compatível</span>
+                  </div>
+                  <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all ${score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-500' : 'bg-zinc-600'}`} style={{ width: `${score}%` }} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {items.map((item, i) => (
+                      <div key={i} className={`flex items-start gap-2 p-3 rounded-2xl ${item.match ? 'bg-emerald-500/5 border border-emerald-500/15' : 'bg-zinc-900 border border-white/5'}`}>
+                        <span className="text-base">{item.icon}</span>
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">{item.label}</p>
+                          <p className={`text-xs font-bold ${item.match ? 'text-emerald-400' : 'text-zinc-400'}`}>{item.value} {item.match ? '✓' : ''}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Sobre a Empresa</h4>
               <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-3xl">
@@ -2472,13 +2566,37 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               {selectedVendor.whatsapp && (
                 <a
-                  href={`https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}`}
+                  href={(() => {
+                    const base = `https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}?text=`;
+                    if (user?.role === 'noiva' && (user.budget || user.weddingDate || user.city)) {
+                      const styleMap: Record<string, string> = { classico: 'Clássico', moderno: 'Moderno', rustico: 'Rústico', minimalista: 'Minimalista', boho: 'Boho', industrial: 'Industrial' };
+                      const urgencyMap: Record<string, string> = { baixo: 'Sem pressa', medio: 'Médio', alto: 'Alto', urgente: 'Urgente' };
+                      const stageMap: Record<string, string> = { pesquisando: 'Pesquisando opções', comparando: 'Comparando propostas', pronto: 'Pronto para contratar' };
+                      const wDate = user.weddingDate ? new Date(user.weddingDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'A definir';
+                      const msg = [
+                        `Olá! Tenho interesse em solicitar um orçamento pelo Noivaflix. 💍`,
+                        ``,
+                        `*📋 Perfil do Meu Casamento:*`,
+                        user.budget ? `• Orçamento total: R$ ${user.budget.toLocaleString('pt-BR')}` : '',
+                        user.vendorTicket ? `• Ticket por fornecedor: R$ ${Number(user.vendorTicket).toLocaleString('pt-BR')}` : '',
+                        `• Data do casamento: ${wDate}`,
+                        user.city ? `• Cidade: ${user.city}` : '',
+                        user.guestCount ? `• Convidados: ${user.guestCount}` : '',
+                        user.weddingStyle ? `• Estilo: ${styleMap[user.weddingStyle] || user.weddingStyle}` : '',
+                        user.urgencyLevel ? `• Urgência: ${urgencyMap[user.urgencyLevel] || user.urgencyLevel}` : '',
+                        user.decisionStage ? `• Estágio: ${stageMap[user.decisionStage] || user.decisionStage}` : '',
+                      ].filter(Boolean).join('\n');
+                      return base + encodeURIComponent(msg);
+                    }
+                    return base + encodeURIComponent(`Olá! Tenho interesse em solicitar um orçamento pelo Noivaflix. 💍`);
+                  })()}
                   target="_blank"
                   rel="noreferrer"
                   onClick={() => handleTrackLead(selectedVendor)}
                   className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
                 >
-                  <MessageCircle size={20} /> Orçamento via WhatsApp
+                  <MessageCircle size={20} /> Solicitar Orçamento
+                  {user?.role === 'noiva' && user?.budget && <span className="text-[9px] opacity-70 ml-1 normal-case font-normal">(Perfil enviado automaticamente)</span>}
                 </a>
               )}
               {selectedVendor.instagram && (
