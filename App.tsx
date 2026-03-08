@@ -360,6 +360,38 @@ const App: React.FC = () => {
     }
   };
 
+  // Fetch all users (brides) from Supabase for the Admin Panel
+  const fetchAllUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role, plan, avatar_url, wedding_date, account_status, created_at')
+        .eq('role', 'noiva');
+
+      if (error) {
+        console.error('Erro ao buscar noivas:', error);
+        return;
+      }
+
+      if (data) {
+        const users: User[] = data.map((p: any) => ({
+          id: p.id,
+          name: p.full_name || p.email || 'Sem nome',
+          email: p.email || '',
+          role: p.role || 'noiva',
+          plan: p.plan || 'Básico',
+          avatar: p.avatar_url || `https://i.pravatar.cc/150?u=${p.id}`,
+          weddingDate: p.wedding_date || '',
+          accountStatus: p.account_status || 'active',
+          dateRegistered: p.created_at ? p.created_at.split('T')[0] : '',
+        }));
+        setAllUsers(users);
+      }
+    } catch (err) {
+      console.error('Exceção ao buscar noivas:', err);
+    }
+  };
+
   // AI Chat States
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai', text: string }[]>([{ role: 'ai', text: 'Oi! Sou sua Madrinha IA. Respira, estou aqui para te ajudar.' }]);
@@ -500,32 +532,6 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchAllUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*');
-
-      if (error) throw error;
-
-      if (data) {
-        const mappedUsers: User[] = data.map(u => ({
-          id: u.id,
-          name: u.name || 'Sem nome',
-          email: u.email || '',
-          role: u.role as any || 'noiva',
-          plan: u.subscription_status === 'active' ? 'Premium' : 'Básico',
-          avatar: u.avatar_url || `https://i.pravatar.cc/150?u=${u.id}`,
-          weddingDate: u.wedding_date || '',
-          accountStatus: u.account_status || 'active',
-          dateRegistered: u.created_at || new Date().toISOString()
-        }));
-        setAllUsers(mappedUsers);
-      }
-    } catch (err) {
-      console.error('Error fetching all users:', err);
-    }
-  };
 
   const fetchVendors = async () => {
     try {
