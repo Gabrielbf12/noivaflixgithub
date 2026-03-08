@@ -92,6 +92,19 @@ export interface Vendor {
   plan: 'Básico' | 'Premium';
   dateRegistered?: string;
   activationDate?: string;
+
+  // Novas funcionalidades estratégicas
+  verified?: boolean;
+  verification_status?: 'pending' | 'approved' | 'rejected' | null;
+  verification_docs?: {
+    cpfCnpj?: string;
+    personalDoc?: string;
+    addressProof?: string;
+    portfolio?: string;
+  };
+  initialInvestment?: string;
+  averageInvestmentRange?: string;
+  averageContractedTicket?: string;
 }
 
 export interface WeddingSiteData {

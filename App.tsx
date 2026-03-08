@@ -200,11 +200,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Database simulator (Initial State)
-  const [allUsers, setAllUsers] = useState<User[]>([
-    { id: '1', name: 'Juliana Silva', email: 'juliana@email.com', role: 'noiva', plan: 'Premium', avatar: 'https://i.pravatar.cc/150?u=1', weddingDate: '2025-12-20', accountStatus: 'active', dateRegistered: '2023-11-01' },
-    { id: '2', name: 'Mariana Costa', email: 'mariana@email.com', role: 'noiva', plan: 'Básico', avatar: 'https://i.pravatar.cc/150?u=2', weddingDate: '2025-05-15', accountStatus: 'active', dateRegistered: '2024-02-10' },
-  ]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
 
   const [vendors, setVendors] = useState<Vendor[]>(MOCK_VENDORS);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -224,7 +220,7 @@ const App: React.FC = () => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editProfileForm, setEditProfileForm] = useState<Partial<Vendor>>({});
 
-  const [vendorSearch, setVendorSearch] = useState({ query: '', category: '', city: '', state: '' });
+  const [vendorSearch, setVendorSearch] = useState({ query: '', category: '', city: '', state: '', price: '' });
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [loadingSite, setLoadingSite] = useState(false);
   const [isLoadingInitial, setIsLoadingInitial] = useState(true);
@@ -386,7 +382,31 @@ const App: React.FC = () => {
       const matchCity = !vendorSearch.city || v.location.toLowerCase().includes(vendorSearch.city.toLowerCase());
       const matchState = !vendorSearch.state || v.state.toLowerCase() === vendorSearch.state.toLowerCase();
 
-      return v.status === 'approved' && matchName && matchCategory && matchCity && matchState;
+      let matchPrice = true;
+      if (vendorSearch.price) {
+        // Lógica simplificada de filtro de preço com base no initialInvestment (string para valor numérico aproximado)
+        // Extrai o primeiro número encontrado na string de investimento inicial (Ex: "A partir de R$ 3.000" -> 3000)
+        const priceString = v.initialInvestment || '0';
+        const numPriceMatch = priceString.replace(/\./g, '').match(/\d+/);
+        const numPrice = numPriceMatch ? parseInt(numPriceMatch[0]) : 0;
+
+        switch (vendorSearch.price) {
+          case 'até R$ 2.000':
+            matchPrice = numPrice > 0 && numPrice <= 2000;
+            break;
+          case 'R$ 2.000 — R$ 5.000':
+            matchPrice = numPrice > 2000 && numPrice <= 5000;
+            break;
+          case 'R$ 5.000 — R$ 10.000':
+            matchPrice = numPrice > 5000 && numPrice <= 10000;
+            break;
+          case 'acima de R$ 10.000':
+            matchPrice = numPrice > 10000;
+            break;
+        }
+      }
+
+      return v.status === 'approved' && matchName && matchCategory && matchCity && matchState && matchPrice;
     });
   }, [vendors, vendorSearch]);
 
@@ -455,6 +475,7 @@ const App: React.FC = () => {
         setIsLoadingInitial(false);
         fetchVendors();
         fetchVideos();
+        fetchAllUsers();
       }
     };
 
@@ -465,6 +486,7 @@ const App: React.FC = () => {
         fetchUserProfile(session.user.id);
         fetchVendors();
         fetchVideos();
+        fetchAllUsers();
         setIsLoggedIn(true);
       } else {
         const isRouted = await checkSiteRouting();
@@ -477,6 +499,33 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchAllUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (error) throw error;
+
+      if (data) {
+        const mappedUsers: User[] = data.map(u => ({
+          id: u.id,
+          name: u.name || 'Sem nome',
+          email: u.email || '',
+          role: u.role as any || 'noiva',
+          plan: u.subscription_status === 'active' ? 'Premium' : 'Básico',
+          avatar: u.avatar_url || `https://i.pravatar.cc/150?u=${u.id}`,
+          weddingDate: u.wedding_date || '',
+          accountStatus: u.account_status || 'active',
+          dateRegistered: u.created_at || new Date().toISOString()
+        }));
+        setAllUsers(mappedUsers);
+      }
+    } catch (err) {
+      console.error('Error fetching all users:', err);
+    }
+  };
 
   const fetchVendors = async () => {
     try {
@@ -575,6 +624,57 @@ const App: React.FC = () => {
     }
   };
 
+  const handleApproveVendor = async (id: string) => {
+    try {
+      const { error } = await supabase.from('profiles').update({ status: 'approved' }).eq('id', id);
+      if (error) throw error;
+      setVendors(vendors.map(v => v.id === id ? { ...v, status: 'approved' } : v));
+      alert('✅ Fornecedor aprovado com sucesso!');
+    } catch (err: any) { alert('Erro ao aprovar: ' + err.message); }
+  };
+
+  const handleRejectVendor = async (id: string) => {
+    try {
+      const { error } = await supabase.from('profiles').update({ status: 'rejected' }).eq('id', id);
+      if (error) throw error;
+      setVendors(vendors.map(v => v.id === id ? { ...v, status: 'rejected' } : v));
+      alert('❌ Fornecedor rejeitado.');
+    } catch (err: any) { alert('Erro ao rejeitar: ' + err.message); }
+  };
+
+  const handleApproveVerification = async (id: string) => {
+    try {
+      const { error } = await supabase.from('profiles').update({
+        verified: true,
+        verification_status: 'approved'
+      }).eq('id', id);
+
+      if (error) throw error;
+
+      setVendors(vendors.map(v => v.id === id ? { ...v, verified: true, verification_status: 'approved' } : v));
+      alert('Selo Fornecedor Verificado Noivaflix concedido com sucesso!');
+    } catch (err: any) {
+      alert('Erro ao aprovar verificação: ' + err.message);
+    }
+  };
+
+  const handleRejectVerification = async (id: string) => {
+    if (!confirm('Tem certeza que deseja reprovar a documentação deste fornecedor?')) return;
+    try {
+      const { error } = await supabase.from('profiles').update({
+        verified: false,
+        verification_status: 'rejected'
+      }).eq('id', id);
+
+      if (error) throw error;
+
+      setVendors(vendors.map(v => v.id === id ? { ...v, verified: false, verification_status: 'rejected' } : v));
+      alert('Solicitação de verificação reprovada. O fornecedor deverá enviar os documentos novamente.');
+    } catch (err: any) {
+      alert('Erro ao reprovar verificação: ' + err.message);
+    }
+  };
+
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
@@ -643,7 +743,12 @@ const App: React.FC = () => {
           status: 'approved',
           views: data.views || 0,
           leads: data.leads || 0,
-          plan: data.subscription_status === 'active' ? 'Premium' : 'Básico'
+          plan: data.subscription_status === 'active' ? 'Premium' : 'Básico',
+          verified: data.verified || false,
+          verification_status: data.verification_status || null,
+          initialInvestment: data.initial_investment || '',
+          averageInvestmentRange: data.avg_investment_range || '',
+          averageContractedTicket: data.avg_ticket || ''
         });
         if (!!data.onboarding_completed) setCurrentView(AppView.SUPPLIER_DASHBOARD);
       }
@@ -816,7 +921,10 @@ const App: React.FC = () => {
         phone: data.phone || data.whatsapp,
         instagram: data.instagram,
         website: data.website,
-        experience_years: data.experience_years
+        experience_years: data.experience_years,
+        initial_investment: data.initialInvestment,
+        avg_investment_range: data.averageInvestmentRange,
+        avg_ticket: data.averageContractedTicket
       };
 
       const { error } = await supabase
@@ -895,14 +1003,6 @@ const App: React.FC = () => {
 
 
 
-
-  const approveVendor = (id: string) => {
-    setVendors(prev => prev.map(v => v.id === id ? { ...v, status: 'approved' } : v));
-  };
-
-  const rejectVendor = (id: string) => {
-    setVendors(prev => prev.map(v => v.id === id ? { ...v, status: 'rejected' } : v));
-  };
 
   const adminStats = useMemo(() => {
     const brides = allUsers.filter(u => u.role === 'noiva');
@@ -1160,15 +1260,17 @@ const App: React.FC = () => {
               <NavItem icon={<LayoutDashboard size={20} />} label="Visão Geral" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'stats'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('stats'); }} />
               <NavItem icon={<Users size={20} />} label="Meu Perfil" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'profile'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('profile'); }} />
               <NavItem icon={<Camera size={20} />} label="Portfólio" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'portfolio'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('portfolio'); }} />
+              <NavItem icon={<BadgeCheck size={20} />} label="Verificação" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'verification' as any} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('verification' as any); }} />
             </>
           )}
           {user?.role === 'admin' && (
             <>
               <NavItem icon={<LayoutDashboard size={20} />} label="Visão Geral" active={currentView === AppView.ADMIN_PANEL && adminTab === 'overview'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('overview'); }} />
               <NavItem icon={<Users size={20} />} label="Noivas" active={currentView === AppView.ADMIN_PANEL && adminTab === 'brides'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('brides'); }} />
-              <NavItem icon={<Store size={20} />} label="Fornecedores" active={currentView === AppView.ADMIN_PANEL && adminTab === 'vendors'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('vendors'); }} />
+              <NavItem icon={<Building2 size={20} />} label="Fornecedores" active={currentView === AppView.ADMIN_PANEL && adminTab === 'vendors'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('vendors'); }} />
+              <NavItem icon={<BadgeCheck size={20} />} label="Verificações" active={currentView === AppView.ADMIN_PANEL && adminTab === 'verifications' as any} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('verifications' as any); }} />
               <NavItem icon={<Wallet size={20} />} label="Financeiro" active={currentView === AppView.ADMIN_PANEL && adminTab === 'finances'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('finances'); }} />
-              <NavItem icon={<VideoIcon size={20} />} label="Conteúdos" active={currentView === AppView.ADMIN_PANEL && adminTab === 'videos'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('videos'); }} />
+              <NavItem icon={<VideoIcon size={20} />} label="Vídeos" active={currentView === AppView.ADMIN_PANEL && adminTab === 'videos'} onClick={() => { setCurrentView(AppView.ADMIN_PANEL); setAdminTab('videos'); }} />
             </>
           )}
         </nav>
@@ -1304,11 +1406,13 @@ const App: React.FC = () => {
             allUsers={allUsers}
             vendors={vendors}
             videos={videos}
-            onApproveVendor={approveVendor}
-            onRejectVendor={rejectVendor}
+            onApproveVendor={handleApproveVendor}
+            onRejectVendor={handleRejectVendor}
             onAddVideo={handleAddVideo}
             onDeleteVideo={handleDeleteVideo}
-            activeTab={adminTab}
+            onApproveVerification={handleApproveVerification}
+            onRejectVerification={handleRejectVerification}
+            activeTab={adminTab as any}
           />
         )}
 
@@ -1661,7 +1765,12 @@ const App: React.FC = () => {
                   <div className="flex gap-8 items-center">
                     <img src={mySupplierProfile.image} className="w-32 h-32 rounded-3xl object-cover border-2 border-white/10" />
                     <div>
-                      <h3 className="text-3xl font-serif">{mySupplierProfile.name}</h3>
+                      <h3 className="text-3xl font-serif flex items-center gap-2">
+                        {mySupplierProfile.name}
+                        {mySupplierProfile.verified && (
+                          <BadgeCheck className="text-blue-500 w-8 h-8" title="Fornecedor Verificado Noivaflix" />
+                        )}
+                      </h3>
                       <p className="text-emerald-500 font-bold uppercase tracking-widest text-[10px]">{mySupplierProfile.category}</p>
                     </div>
                   </div>
@@ -1695,6 +1804,27 @@ const App: React.FC = () => {
                           <p className="text-lg font-bold">{mySupplierProfile.location}, {mySupplierProfile.state}</p>
                         </div>
                       </div>
+
+                      {/* NOVOS CAMPOS DE INVESTIMENTO */}
+                      <div className="space-y-4 pt-4 border-t border-white/5">
+                        <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Valores Praticados</label>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase">Investimento Inicial</p>
+                            <p className="text-lg font-black text-white mt-1">{mySupplierProfile.initialInvestment || 'Não informado'}</p>
+                          </div>
+                          <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase">Faixa Média</p>
+                            <p className="text-lg font-black text-white mt-1">{mySupplierProfile.averageInvestmentRange || 'Não informado'}</p>
+                          </div>
+                          <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase">Ticket Médio Contratado</p>
+                            <p className="text-lg font-black text-white mt-1">{mySupplierProfile.averageContractedTicket || 'Não informado'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      {/* FIM NOVOS CAMPOS DE INVESTIMENTO */}
+
                     </div>
                     <div className="space-y-8">
                       <div className="space-y-4">
@@ -1796,6 +1926,38 @@ const App: React.FC = () => {
                         />
                       </div>
                     </div>
+
+                    {/* INPUTS DE INVESTIMENTO MODO EDIÇÃO */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/5">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Investimento Inicial *</label>
+                        <input
+                          placeholder="Ex: A partir de R$ 3.000"
+                          value={editProfileForm.initialInvestment || ''}
+                          onChange={e => setEditProfileForm({ ...editProfileForm, initialInvestment: e.target.value })}
+                          className="w-full bg-zinc-950 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Faixa Média (Opcional)</label>
+                        <input
+                          placeholder="Ex: R$ 3.000 — R$ 6.000"
+                          value={editProfileForm.averageInvestmentRange || ''}
+                          onChange={e => setEditProfileForm({ ...editProfileForm, averageInvestmentRange: e.target.value })}
+                          className="w-full bg-zinc-950 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Ticket Médio (Opcional)</label>
+                        <input
+                          placeholder="Ex: R$ 4.500"
+                          value={editProfileForm.averageContractedTicket || ''}
+                          onChange={e => setEditProfileForm({ ...editProfileForm, averageContractedTicket: e.target.value })}
+                          className="w-full bg-zinc-950 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                    </div>
+
                     <div className="flex gap-4">
                       <button onClick={() => setIsEditingProfile(false)} className="px-8 py-4 bg-zinc-950 border border-white/5 rounded-2xl font-black uppercase text-xs text-zinc-500 hover:text-white transition-all">Cancelar</button>
                       <button
@@ -1826,6 +1988,148 @@ const App: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+            {(supplierTab as any) === 'verification' && (
+              <div className="bg-zinc-900/50 p-12 rounded-[40px] border border-white/5 animate-in fade-in duration-500">
+                <header className="mb-8">
+                  <h3 className="text-3xl font-serif">Selo de Verificação</h3>
+                  <p className="text-zinc-500 mt-2">Envie seus documentos para obter o selo <span className="text-blue-500 font-bold">"Fornecedor Verificado Noivaflix"</span> e aumentar sua credibilidade.</p>
+                </header>
+
+                {mySupplierProfile.verified ? (
+                  <div className="bg-blue-600/10 border border-blue-500/20 p-8 rounded-3xl flex flex-col items-center text-center space-y-4">
+                    <BadgeCheck className="text-blue-500 w-16 h-16" />
+                    <h4 className="text-xl font-bold text-white">Parabéns! Você é um Fornecedor Verificado.</h4>
+                    <p className="text-blue-500/80 max-w-lg text-sm">Sua conta foi analisada e aprovada pela nossa equipe. O selo já está ativo no seu perfil e nos resultados de busca.</p>
+                  </div>
+                ) : mySupplierProfile.verification_status === 'pending' ? (
+                  <div className="bg-amber-500/10 border border-amber-500/20 p-8 rounded-3xl flex flex-col items-center text-center space-y-4">
+                    <Clock className="text-amber-500 w-16 h-16" />
+                    <h4 className="text-xl font-bold text-white">Documentos em Análise</h4>
+                    <p className="text-amber-500/80 max-w-lg text-sm">Recebemos seus documentos e nossa equipe está analisando. Entraremos em contato em breve.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-8">
+                    {mySupplierProfile.verification_status === 'rejected' && (
+                      <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl flex gap-4">
+                        <AlertCircle className="text-red-500 shrink-0" />
+                        <div>
+                          <h5 className="font-bold text-red-500">Solicitação Reprovada ou Pendente de Correção</h5>
+                          <p className="text-sm text-red-500/80 mt-1">Por favor, revise os documentos enviados ou entre em contato com o suporte.</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-bold">CNPJ ou CPF</h5>
+                          {mySupplierProfile.verification_docs?.cpfCnpj ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
+                        </div>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Cartão CNPJ ou CPF (PDF ou Imagem)</p>
+                        <label className="block w-full cursor-pointer">
+                          <input type="file" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !user) return;
+                            try {
+                              const ext = file.name.split('.').pop();
+                              const path = `verify/${user.id}/cpfCnpj_${Date.now()}.${ext}`;
+                              await supabase.storage.from('vendor-documents').upload(path, file);
+                              const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
+
+                              const currentDocs = mySupplierProfile.verification_docs || {};
+                              const newDocs = { ...currentDocs, cpfCnpj: publicUrl };
+
+                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              alert('Documento enviado com sucesso!');
+                            } catch (err: any) { alert('Erro no upload: ' + err.message); }
+                          }} />
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                        </label>
+                      </div>
+
+                      <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-bold">Documento Pessoal</h5>
+                          {mySupplierProfile.verification_docs?.personalDoc ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
+                        </div>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest">RG ou CNH do Responsável</p>
+                        <label className="block w-full cursor-pointer">
+                          <input type="file" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !user) return;
+                            try {
+                              const ext = file.name.split('.').pop();
+                              const path = `verify/${user.id}/personalDoc_${Date.now()}.${ext}`;
+                              await supabase.storage.from('vendor-documents').upload(path, file);
+                              const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
+                              const currentDocs = mySupplierProfile.verification_docs || {};
+                              const newDocs = { ...currentDocs, personalDoc: publicUrl };
+                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              alert('Documento enviado com sucesso!');
+                            } catch (err: any) { alert('Erro no upload: ' + err.message); }
+                          }} />
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                        </label>
+                      </div>
+
+                      <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-bold">Comprovante de Endereço</h5>
+                          {mySupplierProfile.verification_docs?.addressProof ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
+                        </div>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Conta de luz, água ou internet</p>
+                        <label className="block w-full cursor-pointer">
+                          <input type="file" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !user) return;
+                            try {
+                              const ext = file.name.split('.').pop();
+                              const path = `verify/${user.id}/addressProof_${Date.now()}.${ext}`;
+                              await supabase.storage.from('vendor-documents').upload(path, file);
+                              const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
+                              const currentDocs = mySupplierProfile.verification_docs || {};
+                              const newDocs = { ...currentDocs, addressProof: publicUrl };
+                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              alert('Documento enviado com sucesso!');
+                            } catch (err: any) { alert('Erro no upload: ' + err.message); }
+                          }} />
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                        </label>
+                      </div>
+
+                      <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h5 className="font-bold">Portfólio / Pasta PDF</h5>
+                          {mySupplierProfile.verification_docs?.portfolio ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
+                        </div>
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Apresentação da empresa</p>
+                        <label className="block w-full cursor-pointer">
+                          <input type="file" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !user) return;
+                            try {
+                              const ext = file.name.split('.').pop();
+                              const path = `verify/${user.id}/portfolio_${Date.now()}.${ext}`;
+                              await supabase.storage.from('vendor-documents').upload(path, file);
+                              const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
+                              const currentDocs = mySupplierProfile.verification_docs || {};
+                              const newDocs = { ...currentDocs, portfolio: publicUrl };
+                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              alert('Documento enviado com sucesso!');
+                            } catch (err: any) { alert('Erro no upload: ' + err.message); }
+                          }} />
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1913,6 +2217,23 @@ const App: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5 mt-4">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500 w-full mb-1">Filtrar por Preço:</span>
+                  {['Qualquer', 'até R$ 2.000', 'R$ 2.000 — R$ 5.000', 'R$ 5.000 — R$ 10.000', 'acima de R$ 10.000'].map(priceOpt => (
+                    <button
+                      key={priceOpt}
+                      onClick={() => setVendorSearch({ ...vendorSearch, price: priceOpt === 'Qualquer' ? '' : priceOpt })}
+                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${(vendorSearch.price === priceOpt || (priceOpt === 'Qualquer' && vendorSearch.price === ''))
+                        ? 'bg-red-600 text-white'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                        }`}
+                    >
+                      {priceOpt}
+                    </button>
+                  ))}
+                </div>
+
               </div>
             </header>
 
@@ -1924,7 +2245,7 @@ const App: React.FC = () => {
                 <h3 className="text-2xl font-bold">Nenhum fornecedor encontrado</h3>
                 <p className="text-zinc-500">Tente ajustar seus filtros ou buscar por outros termos.</p>
                 <button
-                  onClick={() => setVendorSearch({ query: '', category: '', city: '', state: '' })}
+                  onClick={() => setVendorSearch({ query: '', category: '', city: '', state: '', price: '' })}
                   className="text-red-500 font-bold hover:underline"
                 >
                   Limpar todos os filtros
@@ -1949,8 +2270,18 @@ const App: React.FC = () => {
                       </div>
                     </div>
                     <div className="p-8 space-y-3">
-                      <h4 className="text-2xl font-bold">{vendor.name}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-2xl font-bold">{vendor.name}</h4>
+                        {vendor.verified && <BadgeCheck className="text-blue-500 w-5 h-5 flex-shrink-0" title="Fornecedor Verificado Noivaflix" />}
+                      </div>
                       <p className="text-zinc-500 text-sm line-clamp-2">{vendor.description}</p>
+
+                      {vendor.initialInvestment && (
+                        <p className="text-xs font-bold text-emerald-500 mt-2">
+                          <span className="text-zinc-500 uppercase text-[9px] tracking-widest mr-1 font-normal">A partir de:</span> {vendor.initialInvestment}
+                        </p>
+                      )}
+
                       <div className="flex flex-wrap items-center gap-2 text-zinc-600 text-[10px] font-black uppercase pt-4 tracking-widest">
                         <span className="bg-zinc-800 px-3 py-1 rounded-lg text-white/80">{vendor.category}</span>
                         <span className="flex items-center gap-1 bg-white/5 px-3 py-1 rounded-lg">
@@ -1983,12 +2314,35 @@ const App: React.FC = () => {
                     {selectedVendor.experience_years} Anos de Exp.
                   </span>
                 </div>
-                <h3 className="text-4xl font-serif">{selectedVendor.name}</h3>
+                <h3 className="text-4xl font-serif flex items-center gap-3">
+                  {selectedVendor.name}
+                  {selectedVendor.verified && (
+                    <BadgeCheck className="text-blue-500 w-8 h-8 flex-shrink-0" title="Fornecedor Verificado Noivaflix" />
+                  )}
+                </h3>
                 <div className="flex items-center gap-2 text-zinc-500 text-sm">
                   <MapPin size={16} /> <span>{selectedVendor.location}, {selectedVendor.state}</span>
                 </div>
               </div>
             </div>
+
+            {/* CAMPOS DE INVESTIMENTO NO MODAL */}
+            {selectedVendor.initialInvestment && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-white/5 rounded-3xl p-6 bg-zinc-950/50">
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">A partir de</p>
+                  <p className="font-bold text-emerald-500">{selectedVendor.initialInvestment || 'Não info'}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Média de mercado</p>
+                  <p className="font-bold text-white">{selectedVendor.averageInvestmentRange || 'Sob consulta'}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Ticket Médio</p>
+                  <p className="font-bold text-white">{selectedVendor.averageContractedTicket || 'Sob consulta'}</p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <h4 className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Sobre a Empresa</h4>

@@ -20,6 +20,11 @@ export const VendorOnboarding: React.FC<VendorOnboardingProps> = ({ userId, onCo
     const [instagram, setInstagram] = useState('');
     const [website, setWebsite] = useState('');
     const [portfolio, setPortfolio] = useState<string[]>([]);
+
+    const [initialInvestment, setInitialInvestment] = useState('');
+    const [averageInvestmentRange, setAverageInvestmentRange] = useState('');
+    const [averageContractedTicket, setAverageContractedTicket] = useState('');
+
     const [loading, setLoading] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -80,6 +85,9 @@ export const VendorOnboarding: React.FC<VendorOnboardingProps> = ({ userId, onCo
                 website: website || null,
                 portfolio: portfolio,
                 avatar_url: avatarUrl,
+                initial_investment: initialInvestment,
+                avg_investment_range: averageInvestmentRange,
+                avg_ticket: averageContractedTicket,
                 onboarding_completed: true
             };
 
@@ -202,10 +210,24 @@ export const VendorOnboarding: React.FC<VendorOnboardingProps> = ({ userId, onCo
                                     <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Descrição / Biografia</label>
                                     <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Conte sua história, estilo de trabalho e diferenciais..." rows={4} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white transition-all resize-none placeholder:text-zinc-700" />
                                 </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-white/5">
+                                    <div className="space-y-2 lg:col-span-1">
+                                        <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Investimento Inicial *</label>
+                                        <input required value={initialInvestment} onChange={e => setInitialInvestment(e.target.value)} placeholder="Ex: A partir de R$ 2.000" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white transition-all" />
+                                    </div>
+                                    <div className="space-y-2 lg:col-span-1">
+                                        <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Média de Mercado</label>
+                                        <input value={averageInvestmentRange} onChange={e => setAverageInvestmentRange(e.target.value)} placeholder="Ex: R$ 3.000 a R$ 6.000" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white transition-all" />
+                                    </div>
+                                    <div className="space-y-2 lg:col-span-1">
+                                        <label className="text-[10px] font-black uppercase text-zinc-600 tracking-widest ml-1">Ticket Médio (Opcional)</label>
+                                        <input value={averageContractedTicket} onChange={e => setAverageContractedTicket(e.target.value)} placeholder="Ex: R$ 4.500" className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 outline-none focus:border-emerald-600 text-white transition-all" />
+                                    </div>
+                                </div>
                             </div>
                             <div className="flex gap-4">
                                 <button onClick={() => setStep(1)} className="flex-1 py-6 bg-zinc-900 text-zinc-500 rounded-3xl font-black uppercase text-[10px] tracking-widest">Voltar</button>
-                                <button onClick={() => setStep(3)} disabled={!businessName || !category} className="flex-[2] py-6 bg-emerald-600 hover:bg-emerald-700 rounded-3xl font-black flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-[11px] disabled:opacity-50 transition-all">Próximo</button>
+                                <button onClick={() => setStep(3)} disabled={!businessName || !category || !initialInvestment} className="flex-[2] py-6 bg-emerald-600 hover:bg-emerald-700 rounded-3xl font-black flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-[11px] disabled:opacity-50 transition-all">Próximo</button>
                             </div>
                         </div>
                     )}

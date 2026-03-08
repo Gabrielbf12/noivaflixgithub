@@ -21,7 +21,9 @@ interface AdminPanelProps {
     onRejectVendor: (id: string) => void;
     onAddVideo: (data: { title: string; category: string; videoUrl: string; thumbnail: string }) => void;
     onDeleteVideo: (id: string) => void;
-    activeTab: 'overview' | 'brides' | 'vendors' | 'finances' | 'videos';
+    onApproveVerification?: (id: string) => void;
+    onRejectVerification?: (id: string) => void;
+    activeTab: 'overview' | 'brides' | 'vendors' | 'finances' | 'videos' | 'verifications';
 }
 
 const PREMIUM_PRICE_NOIVA = 47;
@@ -37,6 +39,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     onRejectVendor,
     onAddVideo,
     onDeleteVideo,
+    onApproveVerification,
+    onRejectVerification,
     activeTab
 }) => {
     const [isAddVideoModalOpen, setIsAddVideoModalOpen] = useState(false);
@@ -245,6 +249,60 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                 ))}
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'verifications' && (
+                <div className="bg-zinc-900/20 p-6 md:p-10 rounded-[40px] border border-white/5 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="flex justify-between items-center mb-8">
+                        <h3 className="text-xl font-bold text-white">Solicitações de Verificação</h3>
+                        <p className="text-zinc-500 text-sm">{vendors.filter(v => v.verification_status === 'pending').length} pendentes</p>
+                    </div>
+
+                    <div className="space-y-6">
+                        {vendors.filter(v => v.verification_status === 'pending').map(v => (
+                            <div key={v.id} className="bg-zinc-900/40 p-6 rounded-3xl border border-white/5 flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                                <div className="flex gap-4 items-center">
+                                    <img src={v.image} className="w-16 h-16 rounded-xl object-cover" />
+                                    <div>
+                                        <h4 className="font-bold text-lg text-white">{v.name}</h4>
+                                        <p className="text-zinc-500 text-xs uppercase tracking-widest">{v.category} • {v.location}</p>
+                                    </div>
+                                </div>
+                                <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 gap-2 w-full md:w-auto">
+                                    {['cpfCnpj', 'personalDoc', 'addressProof', 'portfolio'].map(docKey => (
+                                        <div key={docKey} className="bg-black/20 p-3 rounded-xl flex items-center justify-between">
+                                            <span className="text-[10px] font-bold uppercase text-zinc-500">{docKey}</span>
+                                            {(v.verification_docs as any)?.[docKey] ? (
+                                                <a href={(v.verification_docs as any)[docKey]} target="_blank" rel="noopener noreferrer" className="text-emerald-500 hover:text-emerald-400 p-1">
+                                                    <ArrowUpRight size={14} />
+                                                </a>
+                                            ) : (
+                                                <X size={14} className="text-red-500 opacity-50" />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex gap-2 w-full md:w-auto justify-end">
+                                    <button
+                                        onClick={() => onRejectVerification && onRejectVerification(v.id)}
+                                        className="px-4 py-2 bg-red-600/10 text-red-500 font-bold text-xs uppercase rounded-xl hover:bg-red-600 hover:text-white transition-all"
+                                    >
+                                        Reprovar
+                                    </button>
+                                    <button
+                                        onClick={() => onApproveVerification && onApproveVerification(v.id)}
+                                        className="px-4 py-2 bg-emerald-600/10 text-emerald-500 font-bold text-xs uppercase rounded-xl hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-2"
+                                    >
+                                        <Check size={14} /> Aprovar Selo
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {vendors.filter(v => v.verification_status === 'pending').length === 0 && (
+                            <p className="text-center py-20 text-zinc-500 italic block">Nenhuma solicitação de verificação pendente.</p>
+                        )}
                     </div>
                 </div>
             )}
