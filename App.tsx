@@ -2043,11 +2043,12 @@ const App: React.FC = () => {
                     <h4 className="text-xl font-bold text-white">Parabéns! Você é um Fornecedor Verificado.</h4>
                     <p className="text-blue-500/80 max-w-lg text-sm">Sua conta foi analisada e aprovada pela nossa equipe. O selo já está ativo no seu perfil e nos resultados de busca.</p>
                   </div>
-                ) : mySupplierProfile.verification_status === 'pending' ? (
+                ) : mySupplierProfile.verification_status === 'pending' && mySupplierProfile.verification_docs?.cpfCnpj && mySupplierProfile.verification_docs?.personalDoc && mySupplierProfile.verification_docs?.addressProof ? (
                   <div className="bg-amber-500/10 border border-amber-500/20 p-8 rounded-3xl flex flex-col items-center text-center space-y-4">
                     <Clock className="text-amber-500 w-16 h-16" />
                     <h4 className="text-xl font-bold text-white">Documentos em Análise</h4>
                     <p className="text-amber-500/80 max-w-lg text-sm">Recebemos seus documentos e nossa equipe está analisando. Entraremos em contato em breve.</p>
+                    <p className="text-[10px] text-amber-500/50 uppercase tracking-widest">Caso precise corrigir algum documento, entre em contato com o suporte.</p>
                   </div>
                 ) : (
                   <div className="space-y-8">
@@ -2061,15 +2062,37 @@ const App: React.FC = () => {
                       </div>
                     )}
 
+                    {/* Progress indicator */}
+                    {(() => {
+                      const docs = mySupplierProfile.verification_docs || {};
+                      const filled = [docs.cpfCnpj, docs.personalDoc, docs.addressProof, docs.portfolio].filter(Boolean).length;
+                      const required = [docs.cpfCnpj, docs.personalDoc, docs.addressProof].filter(Boolean).length;
+                      return (
+                        <div className="bg-zinc-950 rounded-2xl p-5 border border-white/5">
+                          <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-zinc-500 mb-3">
+                            <span>{filled} de 4 documentos enviados</span>
+                            <span className={required >= 3 ? 'text-emerald-400' : 'text-zinc-500'}>{required >= 3 ? '✓ Prontos para envio' : `Obrigatórios: ${required}/3`}</span>
+                          </div>
+                          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-700 ${filled >= 4 ? 'bg-emerald-500' : filled >= 2 ? 'bg-amber-500' : 'bg-red-600'}`} style={{ width: `${(filled / 4) * 100}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* CNPJ / CPF */}
                       <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
                         <div className="flex justify-between items-center">
-                          <h5 className="font-bold">CNPJ ou CPF</h5>
+                          <h5 className="font-bold">CNPJ ou CPF <span className="text-red-500 text-xs">*</span></h5>
                           {mySupplierProfile.verification_docs?.cpfCnpj ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
                         </div>
                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Cartão CNPJ ou CPF (PDF ou Imagem)</p>
+                        {mySupplierProfile.verification_docs?.cpfCnpj && (
+                          <p className="text-[10px] text-emerald-500 font-bold">✓ Documento enviado</p>
+                        )}
                         <label className="block w-full cursor-pointer">
-                          <input type="file" className="hidden" onChange={async (e) => {
+                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file || !user) return;
                             try {
@@ -2077,27 +2100,31 @@ const App: React.FC = () => {
                               const path = `verify/${user.id}/cpfCnpj_${Date.now()}.${ext}`;
                               await supabase.storage.from('vendor-documents').upload(path, file);
                               const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
-
                               const currentDocs = mySupplierProfile.verification_docs || {};
                               const newDocs = { ...currentDocs, cpfCnpj: publicUrl };
-
-                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
-                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              await supabase.from('profiles').update({ verification_docs: newDocs }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs });
                               alert('Documento enviado com sucesso!');
                             } catch (err: any) { alert('Erro no upload: ' + err.message); }
                           }} />
-                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">
+                            {mySupplierProfile.verification_docs?.cpfCnpj ? 'Substituir Documento' : 'Enviar Documento'}
+                          </div>
                         </label>
                       </div>
 
+                      {/* Documento Pessoal */}
                       <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
                         <div className="flex justify-between items-center">
-                          <h5 className="font-bold">Documento Pessoal</h5>
+                          <h5 className="font-bold">Documento Pessoal <span className="text-red-500 text-xs">*</span></h5>
                           {mySupplierProfile.verification_docs?.personalDoc ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
                         </div>
                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest">RG ou CNH do Responsável</p>
+                        {mySupplierProfile.verification_docs?.personalDoc && (
+                          <p className="text-[10px] text-emerald-500 font-bold">✓ Documento enviado</p>
+                        )}
                         <label className="block w-full cursor-pointer">
-                          <input type="file" className="hidden" onChange={async (e) => {
+                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file || !user) return;
                             try {
@@ -2107,23 +2134,29 @@ const App: React.FC = () => {
                               const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
                               const currentDocs = mySupplierProfile.verification_docs || {};
                               const newDocs = { ...currentDocs, personalDoc: publicUrl };
-                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
-                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              await supabase.from('profiles').update({ verification_docs: newDocs }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs });
                               alert('Documento enviado com sucesso!');
                             } catch (err: any) { alert('Erro no upload: ' + err.message); }
                           }} />
-                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">
+                            {mySupplierProfile.verification_docs?.personalDoc ? 'Substituir Documento' : 'Enviar Documento'}
+                          </div>
                         </label>
                       </div>
 
+                      {/* Comprovante de Endereço */}
                       <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
                         <div className="flex justify-between items-center">
-                          <h5 className="font-bold">Comprovante de Endereço</h5>
+                          <h5 className="font-bold">Comprovante de Endereço <span className="text-red-500 text-xs">*</span></h5>
                           {mySupplierProfile.verification_docs?.addressProof ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
                         </div>
                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Conta de luz, água ou internet</p>
+                        {mySupplierProfile.verification_docs?.addressProof && (
+                          <p className="text-[10px] text-emerald-500 font-bold">✓ Documento enviado</p>
+                        )}
                         <label className="block w-full cursor-pointer">
-                          <input type="file" className="hidden" onChange={async (e) => {
+                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file || !user) return;
                             try {
@@ -2133,23 +2166,29 @@ const App: React.FC = () => {
                               const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
                               const currentDocs = mySupplierProfile.verification_docs || {};
                               const newDocs = { ...currentDocs, addressProof: publicUrl };
-                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
-                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              await supabase.from('profiles').update({ verification_docs: newDocs }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs });
                               alert('Documento enviado com sucesso!');
                             } catch (err: any) { alert('Erro no upload: ' + err.message); }
                           }} />
-                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">
+                            {mySupplierProfile.verification_docs?.addressProof ? 'Substituir Documento' : 'Enviar Documento'}
+                          </div>
                         </label>
                       </div>
 
+                      {/* Portfólio */}
                       <div className="bg-zinc-950 p-6 rounded-3xl border border-white/5 space-y-4">
                         <div className="flex justify-between items-center">
-                          <h5 className="font-bold">Portfólio / Pasta PDF</h5>
+                          <h5 className="font-bold">Portfólio / Pasta PDF <span className="text-zinc-500 text-xs">(Opcional)</span></h5>
                           {mySupplierProfile.verification_docs?.portfolio ? <CheckCircle className="text-emerald-500 w-5 h-5" /> : <ShieldAlert className="text-zinc-600 w-5 h-5" />}
                         </div>
                         <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Apresentação da empresa</p>
+                        {mySupplierProfile.verification_docs?.portfolio && (
+                          <p className="text-[10px] text-emerald-500 font-bold">✓ Documento enviado</p>
+                        )}
                         <label className="block w-full cursor-pointer">
-                          <input type="file" className="hidden" onChange={async (e) => {
+                          <input type="file" className="hidden" accept="image/*,.pdf" onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file || !user) return;
                             try {
@@ -2159,17 +2198,45 @@ const App: React.FC = () => {
                               const { data: { publicUrl } } = supabase.storage.from('vendor-documents').getPublicUrl(path);
                               const currentDocs = mySupplierProfile.verification_docs || {};
                               const newDocs = { ...currentDocs, portfolio: publicUrl };
-                              await supabase.from('profiles').update({ verification_docs: newDocs, verification_status: 'pending' }).eq('id', user.id);
-                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs, verification_status: 'pending' });
+                              await supabase.from('profiles').update({ verification_docs: newDocs }).eq('id', user.id);
+                              setMySupplierProfile({ ...mySupplierProfile, verification_docs: newDocs });
                               alert('Documento enviado com sucesso!');
                             } catch (err: any) { alert('Erro no upload: ' + err.message); }
                           }} />
-                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">Enviar Documento</div>
+                          <div className="w-full bg-white/5 hover:bg-white/10 text-center py-3 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">
+                            {mySupplierProfile.verification_docs?.portfolio ? 'Substituir Documento' : 'Enviar Documento'}
+                          </div>
                         </label>
                       </div>
                     </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-4 border-t border-white/5">
+                      <p className="text-xs text-zinc-500 mb-4"><span className="text-red-500">*</span> Campos obrigatórios: CNPJ/CPF, Documento Pessoal e Comprovante de Endereço</p>
+                      <button
+                        disabled={!mySupplierProfile.verification_docs?.cpfCnpj || !mySupplierProfile.verification_docs?.personalDoc || !mySupplierProfile.verification_docs?.addressProof}
+                        onClick={async () => {
+                          if (!user) return;
+                          if (!confirm('Tem certeza que deseja enviar os documentos para análise? Após o envio, nossa equipe entrará em contato.')) return;
+                          try {
+                            await supabase.from('profiles').update({ verification_status: 'pending' }).eq('id', user.id);
+                            setMySupplierProfile({ ...mySupplierProfile, verification_status: 'pending' });
+                            alert('✅ Documentos enviados para análise! Entraremos em contato em breve.');
+                          } catch (err: any) { alert('Erro: ' + err.message); }
+                        }}
+                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3"
+                      >
+                        <BadgeCheck size={20} />
+                        {mySupplierProfile.verification_docs?.cpfCnpj && mySupplierProfile.verification_docs?.personalDoc && mySupplierProfile.verification_docs?.addressProof
+                          ? 'Enviar para Análise'
+                          : 'Envie os documentos obrigatórios para continuar'}
+                      </button>
+                    </div>
                   </div>
                 )}
+
+
+
               </div>
             )}
           </div>
