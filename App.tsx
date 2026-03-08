@@ -363,10 +363,7 @@ const App: React.FC = () => {
   // Fetch all users (brides) from Supabase for the Admin Panel
   const fetchAllUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, role, plan, avatar_url, wedding_date, account_status, created_at')
-        .eq('role', 'noiva');
+      const { data, error } = await supabase.rpc('get_all_brides');
 
       if (error) {
         console.error('Erro ao buscar noivas:', error);
@@ -374,9 +371,9 @@ const App: React.FC = () => {
       }
 
       if (data) {
-        const users: User[] = data.map((p: any) => ({
+        const users: User[] = (data as any[]).map((p) => ({
           id: p.id,
-          name: p.full_name || p.email || 'Sem nome',
+          name: p.name || p.email || 'Sem nome',
           email: p.email || '',
           role: p.role || 'noiva',
           plan: p.plan || 'Básico',
