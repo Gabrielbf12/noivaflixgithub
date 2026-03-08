@@ -9,6 +9,7 @@ export enum AppView {
   SITE_PUBLIC = 'site_public',
   VENDORS = 'vendors',
   PROFILE = 'profile',
+  WEDDING_PROFILE = 'wedding_profile',
   SUPPLIER_DASHBOARD = 'supplier_dashboard',
   SUPPLIER_EDIT = 'supplier_edit',
   ADMIN_PANEL = 'admin_panel',
@@ -144,6 +145,12 @@ export interface User {
   subscriptionStatus?: 'active' | 'trialing' | 'past_due' | 'canceled';
   trialEndsAt?: string;
   currentPeriodEnd?: string;
+  weddingStyle?: string;
+  urgencyLevel?: string;
+  decisionStage?: string;
+  vendorTicket?: number;
+  weddingProfileCompleted?: boolean;
+  phone?: string;
 }
 
 export interface BudgetCategory {

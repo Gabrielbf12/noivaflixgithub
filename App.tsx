@@ -189,6 +189,7 @@ import { ExpensesScreen } from './components/ExpensesScreen';
 import { BrideOnboarding } from './components/BrideOnboarding';
 import { VendorOnboarding } from './components/VendorOnboarding';
 import { AdminPanel } from './components/AdminPanel';
+import { WeddingProfile } from './components/WeddingProfile';
 
 // Sub-componentes auxiliares para icones não definidos
 const ArrowUpRight = ({ size }: { size: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10" /><path d="M7 17 17 7" /></svg>;
@@ -711,7 +712,12 @@ const App: React.FC = () => {
         phase: data.phase,
         city: data.city,
         state: data.state,
-        phone: data.phone
+        phone: data.phone,
+        weddingStyle: data.wedding_style,
+        urgencyLevel: data.urgency_level,
+        decisionStage: data.decision_stage,
+        vendorTicket: data.vendor_ticket,
+        weddingProfileCompleted: data.wedding_profile_completed,
       });
       setIsLoggedIn(true);
       console.log('🔍 Checking Role:', data.role);
@@ -1255,6 +1261,7 @@ const App: React.FC = () => {
               <NavItem icon={<Wallet size={20} />} label="Orçamento" active={currentView === AppView.BUDGET} onClick={() => setCurrentView(AppView.BUDGET)} />
               <NavItem icon={<Store size={20} />} label="Fornecedores" active={currentView === AppView.VENDORS} onClick={() => setCurrentView(AppView.VENDORS)} />
               <NavItem icon={<Globe size={20} />} label="Meu Site" active={currentView === AppView.SITE_BUILDER} onClick={() => setCurrentView(AppView.SITE_BUILDER)} />
+              <NavItem icon={<Heart size={20} />} label="Perfil do Casamento" active={currentView === AppView.WEDDING_PROFILE} onClick={() => setCurrentView(AppView.WEDDING_PROFILE)} />
               <NavItem icon={<Trophy size={20} />} label="Quiz do Casal" active={false} onClick={() => window.open('/game/quiz-casal/index.html', '_blank')} />
             </>
           )}
@@ -1537,7 +1544,25 @@ const App: React.FC = () => {
           <GuestsScreen userId={user.id} />
         )}
 
+        {currentView === AppView.WEDDING_PROFILE && user && (
+          <WeddingProfile
+            userId={user.id}
+            initialData={{
+              budget: user.budget,
+              weddingDate: user.weddingDate,
+              city: user.city,
+              guestCount: user.guestCount,
+              weddingStyle: user.weddingStyle,
+              urgencyLevel: user.urgencyLevel,
+              decisionStage: user.decisionStage,
+              vendorTicket: user.vendorTicket,
+            }}
+            onSave={() => fetchUserProfile(user.id)}
+          />
+        )}
+
         {currentView === AppView.SITE_BUILDER && (
+
           <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500">
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
               <div><h2 className="text-5xl font-serif">Meu Site</h2><p className="text-zinc-500">O portal dos seus convidados.</p></div>
