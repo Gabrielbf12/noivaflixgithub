@@ -11,7 +11,7 @@ import {
   Type, Palette, Layout, Save, Wand2, QrCode, Instagram, Globe2, PieChart, DollarSign,
   Trash, Zap, Compass, Upload
 } from 'lucide-react';
-import { AppView, Video, Task, Expense, Guest, Vendor, WeddingSiteData, User, UserRole, PlanningPhase, ApprovalStatus, AccountStatus, AdminLog, BudgetCategory } from './types';
+import { AppView, Video, Task, Expense, Guest, Vendor, WeddingSiteData, User, UserRole, PlanningPhase, ApprovalStatus, AccountStatus, AdminLog, BudgetCategory, Lead } from './types';
 import { MOCK_VIDEOS, MOCK_TASKS, MOCK_GUESTS, MOCK_VENDORS, MOCK_BUDGET } from './constants';
 import { getAIResponse } from './geminiService';
 import { SubscriptionPage } from './components/SubscriptionPage';
@@ -215,7 +215,8 @@ const App: React.FC = () => {
   const [activeModal, setActiveModal] = useState<'task' | 'expense' | 'supplier_details' | 'guest' | 'admin_details' | 'admin_vendor_details' | 'logs' | 'gallery_add' | 'gallery_add_supplier' | 'cover_crop' | null>(null);
   const [siteEditorTab, setSiteEditorTab] = useState<'content' | 'appearance' | 'gallery'>('content');
   const [tempCropImage, setTempCropImage] = useState<string | null>(null);
-  const [supplierTab, setSupplierTab] = useState<'stats' | 'profile' | 'portfolio' | 'plan'>('stats');
+  const [supplierTab, setSupplierTab] = useState<'stats' | 'profile' | 'portfolio' | 'plan' | 'crm'>('stats');
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [adminTab, setAdminTab] = useState<'overview' | 'brides' | 'vendors' | 'finances' | 'videos'>('overview');
   const [showCheckout, setShowCheckout] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -517,6 +518,9 @@ const App: React.FC = () => {
         fetchVendors();
         fetchVideos();
         fetchAllUsers();
+        if (session.user.user_metadata?.role === 'fornecedor') {
+          fetchLeads(session.user.id);
+        }
         setIsLoggedIn(true);
       } else {
         const isRouted = await checkSiteRouting();
@@ -596,6 +600,21 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching videos:', err);
+    }
+  };
+
+  const fetchLeads = async (vendorId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('vendor_leads')
+        .select('*')
+        .eq('vendor_id', vendorId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      if (data) setLeads(data);
+    } catch (err) {
+      console.error('Error fetching leads:', err);
     }
   };
 
@@ -878,6 +897,56 @@ const App: React.FC = () => {
     } catch (err) {
       console.error('Error tracking lead:', err);
     }
+  };
+
+  const handleContactVendor = async (vendor: Vendor) => {
+    if (!user) return;
+
+    // 1. Save lead to Supabase
+    try {
+      await supabase.from('vendor_leads').insert({
+        vendor_id: vendor.userId || vendor.id,
+        bride_id: user.id,
+        bride_name: user.name,
+        bride_city: user.city,
+        bride_wedding_date: user.weddingDate,
+        bride_guest_count: user.guestCount,
+        bride_total_budget: user.budget,
+        bride_vendor_ticket: user.vendorTicket,
+        bride_wedding_style: user.weddingStyle,
+        bride_urgency_level: user.urgencyLevel,
+        bride_decision_stage: user.decisionStage,
+        status: 'new'
+      });
+    } catch (err) {
+      console.error('Error saving lead:', err);
+    }
+
+    // 2. Increment lead count in profile
+    await handleTrackLead(vendor);
+
+    // 3. Open WhatsApp
+    const base = `https://wa.me/55${vendor.whatsapp?.replace(/\D/g, '')}?text=`;
+    const styleMap: Record<string, string> = { classico: 'Clássico', moderno: 'Moderno', rustico: 'Rústico', minimalista: 'Minimalista', boho: 'Boho', industrial: 'Industrial' };
+    const urgencyMap: Record<string, string> = { baixo: 'Sem pressa', medio: 'Médio', alto: 'Alto', urgente: 'Urgente' };
+    const stageMap: Record<string, string> = { pesquisando: 'Pesquisando opções', comparando: 'Comparando propostas', pronto: 'Pronto para contratar' };
+    const wDate = user.weddingDate ? new Date(user.weddingDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'A definir';
+
+    const msg = [
+      `Olá! Tenho interesse em solicitar um orçamento pelo Noivaflix. 💍`,
+      ``,
+      `*📋 Perfil do Meu Casamento:*`,
+      user.budget ? `• Orçamento total: R$ ${user.budget.toLocaleString('pt-BR')}` : '',
+      user.vendorTicket ? `• Ticket por fornecedor: R$ ${Number(user.vendorTicket).toLocaleString('pt-BR')}` : '',
+      `• Data do casamento: ${wDate}`,
+      user.city ? `• Cidade: ${user.city}` : '',
+      user.guestCount ? `• Convidados: ${user.guestCount}` : '',
+      user.weddingStyle ? `• Estilo: ${styleMap[user.weddingStyle] || user.weddingStyle}` : '',
+      user.urgencyLevel ? `• Urgência: ${urgencyMap[user.urgencyLevel] || user.urgencyLevel}` : '',
+      user.decisionStage ? `• Estágio: ${stageMap[user.decisionStage] || user.decisionStage}` : '',
+    ].filter(Boolean).join('\n');
+
+    window.open(base + encodeURIComponent(msg), '_blank');
   };
 
   const handleSendMessage = async () => {
@@ -1269,6 +1338,7 @@ const App: React.FC = () => {
             <>
               <NavItem icon={<LayoutDashboard size={20} />} label="Visão Geral" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'stats'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('stats'); }} />
               <NavItem icon={<Users size={20} />} label="Meu Perfil" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'profile'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('profile'); }} />
+              <NavItem icon={<PieChart size={20} />} label="CRM Leads" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'crm'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('crm'); fetchLeads(user?.id || ''); }} />
               <NavItem icon={<Camera size={20} />} label="Portfólio" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'portfolio'} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('portfolio'); }} />
               <NavItem icon={<BadgeCheck size={20} />} label="Verificação" active={currentView === AppView.SUPPLIER_DASHBOARD && supplierTab === 'verification' as any} onClick={() => { setCurrentView(AppView.SUPPLIER_DASHBOARD); setSupplierTab('verification' as any); }} />
             </>
@@ -2234,9 +2304,91 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
 
+            {supplierTab === 'crm' && (
+              <div className="bg-zinc-950 p-12 rounded-[40px] border border-white/5 space-y-10 animate-in fade-in duration-500">
+                <header className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-3xl font-serif">CRM de Leads</h3>
+                    <p className="text-zinc-500 mt-2">Gerencie os pedidos de orçamento recebidos pela plataforma.</p>
+                  </div>
+                  <div className="bg-emerald-600/10 text-emerald-500 px-6 py-3 rounded-2xl border border-emerald-500/20 flex items-center gap-3">
+                    <PieChart size={20} />
+                    <span className="font-black uppercase tracking-widest text-xs">{leads.length} Leads Totais</span>
+                  </div>
+                </header>
 
+                {leads.length === 0 ? (
+                  <div className="py-20 text-center space-y-4 bg-zinc-900/30 rounded-3xl border border-dashed border-white/5">
+                    <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto text-zinc-700">
+                      <Users size={32} />
+                    </div>
+                    <p className="text-zinc-500 font-medium">Você ainda não recebeu nenhum lead. Capriche no seu perfil!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {leads.map((lead) => (
+                      <div key={lead.id} className="bg-zinc-900/50 border border-white/5 rounded-[32px] overflow-hidden hover:border-emerald-600/30 transition-all p-8 flex flex-col md:flex-row gap-8">
+                        <div className="flex-1 space-y-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-zinc-800 rounded-2xl flex items-center justify-center text-xl">👰</div>
+                              <div>
+                                <h4 className="text-xl font-bold">{lead.bride_name}</h4>
+                                <p className="text-zinc-500 text-xs">Recebido em {new Date(lead.created_at).toLocaleDateString('pt-BR')}</p>
+                              </div>
+                            </div>
+                            <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full ${lead.status === 'new' ? 'bg-emerald-600 text-white' : lead.status === 'contacted' ? 'bg-zinc-800 text-zinc-400' : 'bg-zinc-800 text-zinc-500'}`}>
+                              {lead.status === 'new' ? 'Novo Lead' : lead.status === 'contacted' ? 'Contatado' : lead.status}
+                            </span>
+                          </div>
 
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                              <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Data</p>
+                              <p className="text-sm font-bold">{lead.bride_wedding_date ? new Date(lead.bride_wedding_date + 'T00:00:00').toLocaleDateString('pt-BR') : 'A definir'}</p>
+                            </div>
+                            <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                              <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Cidade</p>
+                              <p className="text-sm font-bold">{lead.bride_city || 'Não info'}</p>
+                            </div>
+                            <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                              <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Convidados</p>
+                              <p className="text-sm font-bold">{lead.bride_guest_count || 'Não info'}</p>
+                            </div>
+                            <div className="bg-black/20 p-4 rounded-2xl border border-white/5">
+                              <p className="text-[9px] uppercase tracking-widest text-zinc-500 mb-1">Budget Forn.</p>
+                              <p className="text-sm font-bold text-emerald-500">{lead.bride_vendor_ticket ? `R$ ${Number(lead.bride_vendor_ticket).toLocaleString('pt-BR')}` : 'Não info'}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            {lead.bride_wedding_style && <span className="bg-zinc-800 px-3 py-1 rounded-lg text-[10px] uppercase font-bold text-zinc-400">✨ {lead.bride_wedding_style}</span>}
+                            {lead.bride_urgency_level && <span className="bg-zinc-800 px-3 py-1 rounded-lg text-[10px] uppercase font-bold text-zinc-400">🔥 {lead.bride_urgency_level}</span>}
+                            {lead.bride_decision_stage && <span className="bg-zinc-800 px-3 py-1 rounded-lg text-[10px] uppercase font-bold text-zinc-400">🎯 {lead.bride_decision_stage}</span>}
+                          </div>
+                        </div>
+
+                        <div className="md:w-px bg-white/5 self-stretch"></div>
+
+                        <div className="md:w-64 flex flex-col justify-center space-y-4">
+                          <button className="w-full bg-zinc-800 text-white py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-zinc-700 transition-all">Ver Detalhes</button>
+                          {lead.status === 'new' && (
+                            <button
+                              onClick={async () => {
+                                const { error } = await supabase.from('vendor_leads').update({ status: 'contacted', contacted_at: new Date().toISOString() }).eq('id', lead.id);
+                                if (!error) fetchLeads(user?.id || '');
+                              }}
+                              className="w-full bg-white text-black py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-zinc-200 transition-all"
+                            >Marcar como Contatado</button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2565,39 +2717,15 @@ const App: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
               {selectedVendor.whatsapp && (
-                <a
-                  href={(() => {
-                    const base = `https://wa.me/55${selectedVendor.whatsapp.replace(/\D/g, '')}?text=`;
-                    if (user?.role === 'noiva' && (user.budget || user.weddingDate || user.city)) {
-                      const styleMap: Record<string, string> = { classico: 'Clássico', moderno: 'Moderno', rustico: 'Rústico', minimalista: 'Minimalista', boho: 'Boho', industrial: 'Industrial' };
-                      const urgencyMap: Record<string, string> = { baixo: 'Sem pressa', medio: 'Médio', alto: 'Alto', urgente: 'Urgente' };
-                      const stageMap: Record<string, string> = { pesquisando: 'Pesquisando opções', comparando: 'Comparando propostas', pronto: 'Pronto para contratar' };
-                      const wDate = user.weddingDate ? new Date(user.weddingDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'A definir';
-                      const msg = [
-                        `Olá! Tenho interesse em solicitar um orçamento pelo Noivaflix. 💍`,
-                        ``,
-                        `*📋 Perfil do Meu Casamento:*`,
-                        user.budget ? `• Orçamento total: R$ ${user.budget.toLocaleString('pt-BR')}` : '',
-                        user.vendorTicket ? `• Ticket por fornecedor: R$ ${Number(user.vendorTicket).toLocaleString('pt-BR')}` : '',
-                        `• Data do casamento: ${wDate}`,
-                        user.city ? `• Cidade: ${user.city}` : '',
-                        user.guestCount ? `• Convidados: ${user.guestCount}` : '',
-                        user.weddingStyle ? `• Estilo: ${styleMap[user.weddingStyle] || user.weddingStyle}` : '',
-                        user.urgencyLevel ? `• Urgência: ${urgencyMap[user.urgencyLevel] || user.urgencyLevel}` : '',
-                        user.decisionStage ? `• Estágio: ${stageMap[user.decisionStage] || user.decisionStage}` : '',
-                      ].filter(Boolean).join('\n');
-                      return base + encodeURIComponent(msg);
-                    }
-                    return base + encodeURIComponent(`Olá! Tenho interesse em solicitar um orçamento pelo Noivaflix. 💍`);
-                  })()}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => handleTrackLead(selectedVendor)}
-                  className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
+                <button
+                  onClick={() => handleContactVendor(selectedVendor)}
+                  className="flex flex-col items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white py-6 rounded-2xl font-black uppercase transition-all shadow-xl shadow-emerald-600/10"
                 >
-                  <MessageCircle size={20} /> Solicitar Orçamento
-                  {user?.role === 'noiva' && user?.budget && <span className="text-[9px] opacity-70 ml-1 normal-case font-normal">(Perfil enviado automaticamente)</span>}
-                </a>
+                  <div className="flex items-center gap-3">
+                    <MessageCircle size={20} /> Solicitar Orçamento
+                  </div>
+                  {user?.role === 'noiva' && user?.budget && <span className="text-[9px] opacity-70 normal-case font-normal">(Perfil enviado e salvo no CRM)</span>}
+                </button>
               )}
               {selectedVendor.instagram && (
                 <a

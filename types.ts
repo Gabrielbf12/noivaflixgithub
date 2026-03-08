@@ -167,3 +167,22 @@ export interface Milestone {
   achieved: boolean;
   date?: string;
 }
+
+export interface Lead {
+  id: string;
+  created_at: string;
+  vendor_id: string;
+  bride_id?: string;
+  bride_name: string;
+  bride_city?: string;
+  bride_wedding_date?: string;
+  bride_guest_count?: string;
+  bride_total_budget?: number;
+  bride_vendor_ticket?: number;
+  bride_wedding_style?: string;
+  bride_urgency_level?: string;
+  bride_decision_stage?: string;
+  status: 'new' | 'contacted' | 'closed' | 'lost';
+  notes?: string;
+  contacted_at?: string;
+}
