@@ -415,7 +415,7 @@ const App: React.FC = () => {
 
       let matchPrice = true;
       if (vendorSearch.price) {
-        // Lógica simplificada de filtro de preço com base no initialInvestment (string para valor numérico aproximado)
+        // Lógica simplificada de filtro de preço com base no investimento inicial (string para valor numérico aproximado)
         // Extrai o primeiro número encontrado na string de investimento inicial (Ex: "A partir de R$ 3.000" -> 3000)
         const priceString = v.initialInvestment || '0';
         const numPriceMatch = priceString.replace(/\./g, '').match(/\d+/);
@@ -1931,7 +1931,7 @@ Você tem disponibilidade para essa data? Poderia me enviar mais informações s
                         <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Valores Praticados</label>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
-                            <p className="text-[10px] font-bold text-zinc-500 uppercase">Investimento Inicial</p>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase">Investimento inicial do serviço</p>
                             <p className="text-lg font-black text-white mt-1">{mySupplierProfile.initialInvestment || 'Não informado'}</p>
                           </div>
                           <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
@@ -2051,7 +2051,7 @@ Você tem disponibilidade para essa data? Poderia me enviar mais informações s
                     {/* INPUTS DE INVESTIMENTO MODO EDIÇÃO */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/5">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Investimento Inicial *</label>
+                        <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Investimento inicial do serviço (Opcional)</label>
                         <input
                           placeholder="Ex: A partir de R$ 3.000"
                           value={editProfileForm.initialInvestment || ''}
@@ -2658,8 +2658,8 @@ Você tem disponibilidade para essa data? Poderia me enviar mais informações s
             {selectedVendor.initialInvestment && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-white/5 rounded-3xl p-6 bg-zinc-950/50">
                 <div>
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">A partir de</p>
-                  <p className="font-bold text-emerald-500">{selectedVendor.initialInvestment || 'Não info'}</p>
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">\uD83D\uDCB0 Investimento inicial</p>
+                  <p className="font-bold text-emerald-500">{selectedVendor.initialInvestment}</p>
                 </div>
                 <div>
                   <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Média de mercado</p>
