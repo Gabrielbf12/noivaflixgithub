@@ -927,28 +927,35 @@ const App: React.FC = () => {
 
     // 3. Open WhatsApp
     const base = `https://wa.me/55${vendor.whatsapp?.replace(/\D/g, '')}?text=`;
-    const styleMap: Record<string, string> = { classico: 'Clássico', moderno: 'Moderno', rustico: 'Rústico', minimalista: 'Minimalista', boho: 'Boho', industrial: 'Industrial' };
-    const stageMap: Record<string, string> = { pesquisando: 'Pesquisando opções', comparando: 'Comparando propostas', pronto: 'Pronto para contratar' };
+    const styleMap: Record<string, string> = {
+      classico: 'Clássico', moderno: 'Moderno', rustico: 'Rústico',
+      minimalista: 'Minimalista', boho: 'Boho', industrial: 'Industrial'
+    };
+    const stageMap: Record<string, string> = {
+      pesquisando: 'Pesquisando opções',
+      comparando: 'Comparando propostas',
+      pronto: 'Pronto para contratar'
+    };
     const wDate = user.weddingDate ? new Date(user.weddingDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'A definir';
 
-    const msg = [
-      `Olá! Tudo bem?`,
-      ``,
-      `Encontrei seu perfil na Noivaflix e gostaria de solicitar um orçamento para *${vendor.category}*.`,
-      ``,
-      `💍 *Informações do casamento*`,
-      ``,
-      `📅 Data: ${wDate}`,
-      `📍 Cidade: ${user.city || 'Não informada'}`,
-      `👥 Convidados: ${user.guestCount || 'Não informado'}`,
-      `🎨 Estilo: ${styleMap[user.weddingStyle || ''] || user.weddingStyle || 'Não informado'}`,
-      ``,
-      `⚡ *Estágio atual:* ${stageMap[user.decisionStage || ''] || user.decisionStage || 'Pesquisando'}`,
-      ``,
-      `Você tem disponibilidade para essa data? Poderia me enviar mais informações sobre seus serviços?`,
-      ``,
-      `📲 *Pedido enviado pela plataforma Noivaflix*`
-    ].join('\n');
+    // Using unicode escapes to avoid encoding issues ()
+    // \uD83D\uDC8D = 💍, \uD83D\uDCC5 = 📅, \uD83D\uDCCD = 📍, \uD83D\uDC65 = 👥, \uD83C\uDFA8 = 🎨, \u26A1 = ⚡, \uD83D\uDCF2 = 📲
+    const msg = `Olá! Tudo bem?
+
+Encontrei seu perfil na Noivaflix e gostaria de solicitar um orçamento para *${vendor.category}*.
+
+\uD83D\uDC8D *Informações do casamento*
+
+\uD83D\uDCC5 Data: ${wDate}
+\uD83D\uDCCD Cidade: ${user.city || 'Não informada'}
+\uD83D\uDC65 Convidados: ${user.guestCount || 'Não informado'}
+\uD83C\uDFA8 Estilo: ${styleMap[user.weddingStyle || ''] || user.weddingStyle || 'Não informado'}
+
+\u26A1 *Estágio atual:* ${stageMap[user.decisionStage || ''] || user.decisionStage || 'Pesquisando'}
+
+Você tem disponibilidade para essa data? Poderia me enviar mais informações sobre seus serviços?
+
+\uD83D\uDCF2 *Pedido enviado pela plataforma Noivaflix*`;
 
     window.open(base + encodeURIComponent(msg), '_blank');
   };
