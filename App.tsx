@@ -569,7 +569,12 @@ const App: React.FC = () => {
           status: 'approved',
           views: v.views || 0,
           leads: v.leads || 0,
-          plan: v.subscription_status === 'active' ? 'Premium' : 'Básico'
+          plan: v.subscription_status === 'active' ? 'Premium' : 'Básico',
+          verified: v.verified || false,
+          verification_status: v.verification_status || null,
+          initialInvestment: v.initial_investment || '',
+          averageInvestmentRange: v.avg_investment_range || '',
+          averageContractedTicket: v.avg_ticket || ''
         }));
         setVendors(mappedVendors);
       }
