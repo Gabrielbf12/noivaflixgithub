@@ -928,23 +928,27 @@ const App: React.FC = () => {
     // 3. Open WhatsApp
     const base = `https://wa.me/55${vendor.whatsapp?.replace(/\D/g, '')}?text=`;
     const styleMap: Record<string, string> = { classico: 'Clássico', moderno: 'Moderno', rustico: 'Rústico', minimalista: 'Minimalista', boho: 'Boho', industrial: 'Industrial' };
-    const urgencyMap: Record<string, string> = { baixo: 'Sem pressa', medio: 'Médio', alto: 'Alto', urgente: 'Urgente' };
     const stageMap: Record<string, string> = { pesquisando: 'Pesquisando opções', comparando: 'Comparando propostas', pronto: 'Pronto para contratar' };
     const wDate = user.weddingDate ? new Date(user.weddingDate + 'T00:00:00').toLocaleDateString('pt-BR') : 'A definir';
 
     const msg = [
-      `Olá! Tenho interesse em solicitar um orçamento pelo Noivaflix. 💍`,
+      `Olá! Tudo bem?`,
       ``,
-      `*📋 Perfil do Meu Casamento:*`,
-      user.budget ? `• Orçamento total: R$ ${user.budget.toLocaleString('pt-BR')}` : '',
-      user.vendorTicket ? `• Ticket por fornecedor: R$ ${Number(user.vendorTicket).toLocaleString('pt-BR')}` : '',
-      `• Data do casamento: ${wDate}`,
-      user.city ? `• Cidade: ${user.city}` : '',
-      user.guestCount ? `• Convidados: ${user.guestCount}` : '',
-      user.weddingStyle ? `• Estilo: ${styleMap[user.weddingStyle] || user.weddingStyle}` : '',
-      user.urgencyLevel ? `• Urgência: ${urgencyMap[user.urgencyLevel] || user.urgencyLevel}` : '',
-      user.decisionStage ? `• Estágio: ${stageMap[user.decisionStage] || user.decisionStage}` : '',
-    ].filter(Boolean).join('\n');
+      `Encontrei seu perfil na Noivaflix e gostaria de solicitar um orçamento para *${vendor.category}*.`,
+      ``,
+      `💍 *Informações do casamento*`,
+      ``,
+      `📅 Data: ${wDate}`,
+      `📍 Cidade: ${user.city || 'Não informada'}`,
+      `👥 Convidados: ${user.guestCount || 'Não informado'}`,
+      `🎨 Estilo: ${styleMap[user.weddingStyle || ''] || user.weddingStyle || 'Não informado'}`,
+      ``,
+      `⚡ *Estágio atual:* ${stageMap[user.decisionStage || ''] || user.decisionStage || 'Pesquisando'}`,
+      ``,
+      `Você tem disponibilidade para essa data? Poderia me enviar mais informações sobre seus serviços?`,
+      ``,
+      `📲 *Pedido enviado pela plataforma Noivaflix*`
+    ].join('\n');
 
     window.open(base + encodeURIComponent(msg), '_blank');
   };
@@ -2724,7 +2728,7 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-3">
                     <MessageCircle size={20} /> Solicitar Orçamento
                   </div>
-                  {user?.role === 'noiva' && user?.budget && <span className="text-[9px] opacity-70 normal-case font-normal">(Perfil enviado e salvo no CRM)</span>}
+                  {user?.role === 'noiva' && (user?.city || user?.weddingDate) && <span className="text-[9px] opacity-70 normal-case font-normal">(Perfil enviado e salvo no CRM)</span>}
                 </button>
               )}
               {selectedVendor.instagram && (
