@@ -1937,7 +1937,11 @@ Você tem disponibilidade para essa data? Poderia me enviar mais informações s
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
                             <p className="text-[10px] font-bold text-zinc-500 uppercase">Investimento inicial do serviço</p>
-                            <p className="text-lg font-black text-white mt-1">{mySupplierProfile.initialInvestment || 'Não informado'}</p>
+                            <p className="text-lg font-black text-white mt-1">
+                              {mySupplierProfile.initialInvestment
+                                ? (mySupplierProfile.initialInvestment.startsWith('R$') ? mySupplierProfile.initialInvestment : `R$ ${mySupplierProfile.initialInvestment}`)
+                                : 'Não informado'}
+                            </p>
                           </div>
                           <div className="bg-zinc-950 p-6 rounded-2xl border border-white/5">
                             <p className="text-[10px] font-bold text-zinc-500 uppercase">Faixa Média</p>
@@ -2663,16 +2667,26 @@ Você tem disponibilidade para essa data? Poderia me enviar mais informações s
             {selectedVendor.initialInvestment && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-white/5 rounded-3xl p-6 bg-zinc-950/50">
                 <div>
-                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">\uD83D\uDCB0 Investimento inicial</p>
-                  <p className="font-bold text-emerald-500">{selectedVendor.initialInvestment}</p>
+                  <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">💰 Investimento inicial</p>
+                  <p className="font-bold text-emerald-500">
+                    {selectedVendor.initialInvestment.startsWith('R$') ? selectedVendor.initialInvestment : `R$ ${selectedVendor.initialInvestment}`}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Média de mercado</p>
-                  <p className="font-bold text-white">{selectedVendor.averageInvestmentRange || 'Sob consulta'}</p>
+                  <p className="font-bold text-white">
+                    {selectedVendor.averageInvestmentRange
+                      ? (selectedVendor.averageInvestmentRange.startsWith('R$') ? selectedVendor.averageInvestmentRange : `R$ ${selectedVendor.averageInvestmentRange}`)
+                      : 'Sob consulta'}
+                  </p>
                 </div>
                 <div>
                   <p className="text-[9px] uppercase tracking-widest text-zinc-500 font-bold mb-1">Ticket Médio</p>
-                  <p className="font-bold text-white">{selectedVendor.averageContractedTicket || 'Sob consulta'}</p>
+                  <p className="font-bold text-white">
+                    {selectedVendor.averageContractedTicket
+                      ? (selectedVendor.averageContractedTicket.startsWith('R$') ? selectedVendor.averageContractedTicket : `R$ ${selectedVendor.averageContractedTicket}`)
+                      : 'Sob consulta'}
+                  </p>
                 </div>
               </div>
             )}
