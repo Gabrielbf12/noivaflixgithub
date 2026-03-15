@@ -163,7 +163,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAction }) => {
                 {/* Main Content Area */}
                 <div className="flex-1 p-6 md:p-12 space-y-10 overflow-hidden">
                   <div className="flex justify-between items-center">
-                  <div className="flex justify-between items-center">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-red-500"><Heart size={14} fill="currentColor" /></span>
