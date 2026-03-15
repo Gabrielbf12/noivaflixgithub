@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { UserRole } from '../types';
 import { Logo } from '../App';
+import { LandingPage } from './LandingPage';
+import { ArrowLeft } from 'lucide-react';
 
 interface AuthScreenProps {
     onAuthSuccess: (userId: string, role: UserRole, onboardingCompleted?: boolean) => void;
@@ -16,6 +18,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     const [role, setRole] = useState<UserRole>('noiva');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showLanding, setShowLanding] = useState(true);
+
+    const handleLandingAction = (mode: 'login' | 'signup', selectedRole?: 'noiva' | 'fornecedor') => {
+        setAuthMode(mode);
+        if (selectedRole) setRole(selectedRole);
+        setShowLanding(false);
+    };
 
     const handleAuth = async () => {
         setLoading(true);
@@ -135,14 +144,36 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
         }
     };
 
+    if (showLanding) {
+        return <LandingPage onAction={handleLandingAction} />;
+    }
+
     return (
-        <div className="min-h-screen w-full flex bg-black text-white font-sans selection:bg-red-500">
+        <div className="min-h-screen w-full flex bg-black text-white font-sans selection:bg-red-500 animate-in fade-in duration-500">
             <div className="hidden lg:flex flex-1 relative items-center justify-center p-20 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-transparent to-black z-10"></div>
                 <img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200" className="absolute inset-0 w-full h-full object-cover opacity-30" alt="Wedding" />
-                <div className="relative z-20 space-y-8"><Logo className="w-96" /><h1 className="text-7xl font-serif">Respira.<br /><span className="text-zinc-500 text-5xl">A melhor temporada da sua vida vai começar.</span></h1></div>
+                <div className="relative z-20 space-y-8">
+                    <button 
+                        onClick={() => setShowLanding(true)}
+                        className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-4 group"
+                    >
+                        <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> 
+                        <span className="text-xs font-black uppercase tracking-widest">Voltar</span>
+                    </button>
+                    <Logo className="w-96" />
+                    <h1 className="text-7xl font-serif">Respira.<br /><span className="text-zinc-500 text-5xl">A melhor temporada da sua vida vai começar.</span></h1>
+                </div>
             </div>
-            <div className="w-full lg:w-[500px] bg-zinc-950 flex flex-col justify-center p-8 md:p-16 border-l border-white/5">
+            <div className="w-full lg:w-[500px] bg-zinc-950 flex flex-col justify-center p-8 md:p-16 border-l border-white/5 relative">
+                {/* Mobile Back Button */}
+                <button 
+                    onClick={() => setShowLanding(true)}
+                    className="lg:hidden absolute top-8 left-8 flex items-center gap-2 text-zinc-500 hover:text-white transition-colors group"
+                >
+                    <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> 
+                </button>
+
                 <div className="max-w-md mx-auto w-full space-y-10">
                     <div className="lg:hidden flex justify-center mb-8"><Logo className="w-48" /></div>
                     <div className="space-y-4">
@@ -169,7 +200,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
                         {loading ? 'Carregando...' : (authMode === 'login' ? 'Entrar Agora' : 'Criar minha conta')}
                     </button>
 
-                    <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="w-full text-zinc-500 text-sm hover:text-white text-center">{authMode === 'login' ? 'Cadastre-se grátis' : 'Já tem conta? Faça login'}</button>
+                    <nav className="flex flex-col gap-4">
+                        <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="w-full text-zinc-500 text-sm hover:text-white text-center">{authMode === 'login' ? 'Cadastre-se grátis' : 'Já tem conta? Faça login'}</button>
+                        <button onClick={() => setShowLanding(true)} className="w-full text-zinc-700 text-[10px] uppercase font-black tracking-widest hover:text-red-500 transition-colors">Voltar para a página inicial</button>
+                    </nav>
                     <div className="pt-4 border-t border-white/5 text-center"><p className="text-zinc-700 text-[10px] uppercase font-black tracking-widest">Acesso Restrito: admin@noivaflix.com</p></div>
                 </div>
             </div>
