@@ -163,31 +163,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAction }) => {
                 {/* Main Content Area */}
                 <div className="flex-1 p-6 md:p-12 space-y-10 overflow-hidden">
                   <div className="flex justify-between items-center">
-                    <div className="space-y-2">
-                      <div className="h-4 w-20 bg-zinc-800 rounded-full"></div>
-                      <div className="h-8 w-64 bg-white/5 rounded-2xl"></div>
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-red-500"><Heart size={14} fill="currentColor" /></span>
+                        <h3 className="text-xl font-serif text-white">Casamento Ana & Lucas</h3>
+                      </div>
+                      <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-medium uppercase tracking-widest">
+                        <span>12 Outubro 2026</span>
+                        <span className="w-1 h-1 bg-zinc-700 rounded-full"></span>
+                        <span className="text-red-500/80">Faltam 184 dias</span>
+                      </div>
                     </div>
-                    <div className="flex gap-4">
-                      <div className="w-12 h-12 bg-zinc-900 rounded-2xl border border-white/5"></div>
-                      <div className="w-12 h-12 bg-zinc-900 rounded-2xl border border-white/5"></div>
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-zinc-900 rounded-xl border border-white/5 flex items-center justify-center text-zinc-500"><Search size={16} /></div>
+                      <div className="w-10 h-10 bg-zinc-900 rounded-xl border border-white/5 flex items-center justify-center text-zinc-500 transition-colors hover:bg-red-600/20"><Calendar size={16} /></div>
                     </div>
                   </div>
 
                   {/* Stats Cards */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {[
-                      { label: "Checklist", val: "75%", color: "text-red-500" },
-                      { label: "Orçamento", val: "R$ 42k", color: "text-emerald-500" },
-                      { label: "Convidados", val: "240", color: "text-blue-500" }
+                      { label: "Checklist", val: "75%", color: "text-red-500", sub: "12 de 16 itens" },
+                      { label: "Orçamento", val: "R$ 42k", color: "text-emerald-500", sub: "Meta: R$ 50k" },
+                      { label: "Convidados", val: "240", color: "text-blue-500", sub: "180 confirmados" }
                     ].map((s, i) => (
                       <div key={i} className="bg-zinc-900/40 p-6 rounded-[24px] border border-white/5 space-y-4">
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{s.label}</span>
                           <div className={`p-2 bg-black/40 rounded-lg ${s.color}`}><Zap size={14} /></div>
                         </div>
-                        <div className="text-3xl font-serif">{s.val}</div>
+                        <div className="space-y-1">
+                          <div className="text-3xl font-serif">{s.val}</div>
+                          <div className="text-[10px] text-zinc-600 font-medium uppercase tracking-wider">{s.sub}</div>
+                        </div>
                         <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                          <div className={`h-full bg-current ${s.color}`} style={{ width: '60%' }}></div>
+                          <div className={`h-full bg-current ${s.color}`} style={{ width: i === 0 ? '75%' : i === 1 ? '84%' : '75%' }}></div>
                         </div>
                       </div>
                     ))}
@@ -197,25 +208,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAction }) => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="bg-zinc-900/20 border border-white/5 rounded-[32px] p-8 space-y-6">
                       <div className="flex justify-between items-center">
-                        <div className="h-4 w-40 bg-white/5 rounded-full"></div>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-zinc-400">Próximas Tarefas</h4>
                         <Plus size={20} className="text-zinc-600" />
                       </div>
                       <div className="space-y-4 pt-2">
-                        {[1, 2, 3, 4].map(j => (
+                        {[
+                          { t: "Fotografia", c: true },
+                          { t: "Buffet", c: true },
+                          { t: "Local da cerimônia", c: true },
+                          { t: "Música", c: false },
+                          { t: "Decoração", c: false }
+                        ].map((item, j) => (
                           <div key={j} className="flex items-center gap-4 group/item">
-                            <div className="w-6 h-6 rounded-lg bg-zinc-900 border border-white/10 group-hover/item:border-red-600 transition-colors"></div>
-                            <div className="h-2 flex-1 bg-zinc-900 rounded-full"></div>
-                            <div className="h-4 w-12 bg-white/5 rounded-full"></div>
+                            <div className={`w-6 h-6 rounded-lg border transition-colors flex items-center justify-center ${item.c ? 'bg-red-600/10 border-red-600/40 text-red-500' : 'bg-zinc-900 border-white/10'}`}>
+                              {item.c && <CheckCircle2 size={12} />}
+                            </div>
+                            <div className={`text-sm ${item.c ? 'text-zinc-500 line-through' : 'text-zinc-300'}`}>{item.t}</div>
+                            <div className="ml-auto text-[9px] text-zinc-600 font-mono">12/OUT</div>
                           </div>
                         ))}
                       </div>
                     </div>
                     <div className="bg-zinc-900/20 border border-white/5 rounded-[32px] p-8 space-y-6">
-                      <div className="h-4 w-40 bg-white/5 rounded-full"></div>
-                      <div className="grid grid-cols-2 gap-4 pt-2">
-                        {[1, 2, 3, 4].map(k => (
-                          <div key={k} className="aspect-video bg-zinc-900/60 rounded-2xl border border-white/5 flex items-center justify-center">
-                             <div className="w-8 h-8 rounded-full bg-white/5 border border-white/5"></div>
+                      <h4 className="text-xs font-black uppercase tracking-widest text-zinc-400">Meus Fornecedores</h4>
+                      <div className="space-y-3 pt-2">
+                        {[
+                          { n: "Fotografia", s: "contratado", c: "text-emerald-500" },
+                          { n: "Buffet", s: "contratado", c: "text-emerald-500" },
+                          { n: "Decoração", s: "em negociação", c: "text-amber-500" },
+                          { n: "Cerimonial", s: "analisando", c: "text-zinc-500" }
+                        ].map((vendor, k) => (
+                          <div key={k} className="flex items-center justify-between p-4 bg-zinc-900/60 rounded-2xl border border-white/5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-red-600/10 flex items-center justify-center text-red-500"><Store size={14} /></div>
+                              <span className="text-xs font-bold text-zinc-200">{vendor.n}</span>
+                            </div>
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${vendor.c}`}>{vendor.s}</span>
                           </div>
                         ))}
                       </div>
