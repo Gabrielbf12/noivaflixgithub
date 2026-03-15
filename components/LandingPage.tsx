@@ -47,7 +47,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAction }) => {
 
         <div className="relative z-10 max-w-5xl mx-auto space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
           <div className="space-y-6">
-            <h1 className="text-4xl md:text-7xl lg:text-8xl font-serif leading-[1.1] tracking-tight drop-shadow-2xl">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif leading-[1.1] tracking-tight drop-shadow-2xl">
               Organize seu casamento e encontre os <br className="hidden md:block" /> 
               <span className="text-white">melhores fornecedores</span> em um só lugar.
             </h1>
