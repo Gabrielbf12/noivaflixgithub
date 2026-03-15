@@ -4,7 +4,7 @@ import {
   ArrowRight, CheckCircle2, Heart, Users, Store, Zap, 
   MessageCircle, Smartphone, Globe, ShieldCheck, ChevronDown, Plus,
   LayoutDashboard, Video as VideoIcon, ListTodo, Wallet, Search, Star,
-  Calendar, MapPin, Share2, ClipboardCheck, BarChart3
+  Calendar, MapPin, Share2, ClipboardCheck, BarChart3, UserPlus, PieChart
 } from 'lucide-react';
 import { Logo } from '../App';
 
@@ -471,7 +471,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAction }) => {
           <p className="text-[10px] text-zinc-700 font-bold uppercase tracking-[0.3em]">© 2026 NOIVAFLIX. Inteligência em Eventos.</p>
           <div className="flex gap-8 items-center grayscale opacity-30 hover:opacity-100 transition-all duration-500">
             <ShieldCheck size={18} />
-            <Globe2 size={18} />
+            <Globe size={18} />
             <Zap size={18} className="text-red-600" />
             <div className="text-[9px] font-black uppercase tracking-widest">SSL secure</div>
           </div>
