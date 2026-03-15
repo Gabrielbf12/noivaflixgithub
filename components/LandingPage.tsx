@@ -16,73 +16,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAction }) => {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans selection:bg-red-500 overflow-x-hidden">
       {/* Header / Navbar */}
-      <header className="fixed top-0 left-0 w-full z-[100] bg-black/40 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <Logo className="w-32 md:w-36" />
+      <header className="absolute top-0 left-0 w-full z-[100] px-6 py-6 transition-all duration-300">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <Logo className="w-32 md:w-44" />
           </div>
-          <nav className="flex items-center gap-6">
-            <button 
-              onClick={() => onAction('login')} 
-              className="hidden md:block text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors"
-            >
-              Entrar
-            </button>
-            <button 
-              onClick={() => onAction('signup', 'noiva')}
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-red-900/20 active:scale-95 flex items-center gap-2"
-            >
-              Começar Agora <ArrowRight size={14} />
-            </button>
-          </nav>
+          <button 
+            onClick={() => onAction('login')} 
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95"
+          >
+            Entrar
+          </button>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 px-6 overflow-hidden">
-        {/* Background - Elegant Gradient Mesh */}
+      {/* Cinematic Hero Section */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden">
+        {/* Background Image with Cinematic Overlay */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_40%,rgba(229,9,20,0.08),transparent_60%)]"></div>
-          <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black to-transparent"></div>
+          <img 
+            src="https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1920" 
+            className="w-full h-full object-cover scale-105 animate-zoom"
+            alt="Casamento Premium"
+          />
+          {/* Black gradient overlays for contrast and depth */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40"></div>
+          <div className="absolute inset-0 bg-black/30"></div>
         </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto text-center space-y-10 animate-in fade-in slide-in-from-bottom-12 duration-1000">
-          <div className="inline-flex items-center gap-3 bg-zinc-900/50 border border-white/10 px-6 py-2.5 rounded-full backdrop-blur-md">
-            <span className="flex h-2 w-2 rounded-full bg-red-600 animate-pulse"></span>
-            <span className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em]">A inteligência que seu casamento merece</span>
-          </div>
-          
-          <h1 className="text-5xl md:text-8xl font-serif leading-[1.05] tracking-tight">
-            A plataforma completa que <span className="text-red-600 italic">conecta noivas</span> e fornecedores em um único lugar.
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto font-light leading-relaxed">
-            Organize seu planejamento, controle seu orçamento e encontre os melhores profissionais. Elimine o caos das mensagens perdidas com uma gestão inteligente e centralizada.
-          </p>
-
-          <div className="space-y-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">
-              A escolha favorita dos noivos mais organizados do Brasil
+        <div className="relative z-10 max-w-5xl mx-auto space-y-8 md:space-y-12 animate-in fade-in slide-in-from-bottom-12 duration-1000">
+          <div className="space-y-6">
+            <h1 className="text-4xl md:text-7xl lg:text-8xl font-serif leading-[1.1] tracking-tight drop-shadow-2xl">
+              Organize seu casamento e encontre os <br className="hidden md:block" /> 
+              <span className="text-white">melhores fornecedores</span> em um só lugar.
+            </h1>
+            
+            <p className="text-lg md:text-2xl text-zinc-200 max-w-3xl mx-auto font-light leading-relaxed drop-shadow-lg">
+              A Noivaflix conecta noivas e fornecedores com mais organização, praticidade e menos mensagens perdidas.
             </p>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-4 pt-4">
+          </div>
+
+          <div className="flex flex-col items-center space-y-6">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4 w-full md:w-auto">
               <button 
                 onClick={() => onAction('signup', 'noiva')}
-                className="w-full md:w-auto px-12 py-6 bg-red-600 hover:bg-red-700 text-white rounded-[24px] font-black text-sm uppercase tracking-[0.2em] shadow-2xl shadow-red-600/30 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
+                className="group w-full md:w-auto px-12 py-6 bg-red-600 hover:bg-red-700 text-white rounded-lg font-bold text-lg md:text-xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3 shadow-[0_0_40px_-10px_rgba(229,9,20,0.5)]"
               >
-                Criar conta gratuita <ArrowRight size={20} />
+                Começar grátis <ArrowRight className="group-hover:translate-x-1 transition-transform" />
               </button>
               <button 
                 onClick={() => onAction('signup', 'fornecedor')}
-                className="w-full md:w-auto px-12 py-6 bg-zinc-900/50 hover:bg-zinc-800 text-white border border-white/10 rounded-[24px] font-black text-sm uppercase tracking-[0.2em] backdrop-blur-md transition-all hover:scale-105 active:scale-95"
+                className="w-full md:w-auto px-12 py-6 bg-black/40 hover:bg-black/60 text-white border border-white/20 backdrop-blur-md rounded-lg font-bold text-lg md:text-xl transition-all hover:scale-105 active:scale-95"
               >
                 Sou fornecedor
               </button>
             </div>
+            
+            <p className="text-zinc-300 text-[10px] md:text-xs font-medium uppercase tracking-[0.3em] opacity-80">
+              Planejamento, fornecedores e organização em uma única plataforma.
+            </p>
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-20 animate-bounce">
+        {/* Cinematic Scroll Indicator */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 opacity-40 animate-bounce">
           <ChevronDown size={32} />
         </div>
       </section>
